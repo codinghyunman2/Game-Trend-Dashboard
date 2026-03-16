@@ -3,17 +3,16 @@ import { fetchAdsByKeyword } from '@/lib/metaApi'
 import { scoreAllAds } from '@/lib/scorer'
 import { detectCountry } from '@/lib/languageDetector'
 import { MetaAd } from '@/types/ad'
-import fs from 'fs'
-import path from 'path'
-import crypto from 'crypto'
+import { getCache, setCache } from '@/lib/cache'
 
-const CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
+const ADS_CACHE_KEY = 'ads_data'
+const ADS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 
-function getCacheFilePath(keywords: string[]): string {
-  const hash = crypto.createHash('md5').update([...keywords].sort().join(',')).digest('hex').slice(0, 8)
-  const cacheDir = path.join(process.cwd(), 'cache')
-  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
-  return path.join(cacheDir, `ads_${hash}.json`)
+interface AdsCachePayload {
+  ads: MetaAd[]
+  fetchedAt: string
+  cachedAt: string
+  keywords: string[]
 }
 
 export async function GET(request: NextRequest) {
@@ -30,19 +29,10 @@ export async function GET(request: NextRequest) {
   const keywords = keywordsParam.split(',').map((k) => k.trim()).filter(Boolean)
   const forceRefresh = searchParams.get('refresh') === 'true'
 
-  const cacheFile = getCacheFilePath(keywords)
-
   if (!forceRefresh) {
-    try {
-      if (fs.existsSync(cacheFile)) {
-        const raw = fs.readFileSync(cacheFile, 'utf-8')
-        const cached = JSON.parse(raw)
-        if (Date.now() - new Date(cached.cachedAt).getTime() < CACHE_TTL) {
-          return NextResponse.json(cached)
-        }
-      }
-    } catch {
-      // cache miss, proceed
+    const cached = getCache<AdsCachePayload>(ADS_CACHE_KEY)
+    if (cached) {
+      return NextResponse.json(cached)
     }
   }
 
@@ -75,18 +65,14 @@ export async function GET(request: NextRequest) {
     allAds.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
 
     const now = new Date().toISOString()
-    const responseData = {
+    const responseData: AdsCachePayload = {
       ads: allAds,
       fetchedAt: now,
       cachedAt: now,
       keywords,
     }
 
-    try {
-      fs.writeFileSync(cacheFile, JSON.stringify(responseData), 'utf-8')
-    } catch {
-      // cache write failure is non-critical
-    }
+    setCache<AdsCachePayload>(ADS_CACHE_KEY, responseData, ADS_CACHE_TTL)
 
     return NextResponse.json(responseData)
   } catch (error) {

@@ -1,37 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NewsItem, NewsFetchResponse } from '@/types/news'
-import fs from 'fs'
-import path from 'path'
+import { getCache, setCache } from '@/lib/cache'
 
 export const dynamic = 'force-dynamic'
 
-const CACHE_FILE = path.join(process.cwd(), 'cache', 'news.json')
-const CACHE_TTL_MS = 3 * 60 * 60 * 1000 // 3시간
+const NEWS_CACHE_KEY = 'news_data'
+const NEWS_CACHE_TTL = 1000 * 60 * 60 * 3 // 3시간
 
-interface CacheFile {
-  cachedAt: string
+interface NewsCachePayload {
   data: NewsFetchResponse
-}
-
-function readCache(): CacheFile | null {
-  try {
-    const raw = fs.readFileSync(CACHE_FILE, 'utf-8')
-    return JSON.parse(raw) as CacheFile
-  } catch {
-    return null
-  }
-}
-
-function writeCache(data: NewsFetchResponse): string {
-  const cachedAt = new Date().toISOString()
-  const cache: CacheFile = { cachedAt, data }
-  try {
-    fs.mkdirSync(path.dirname(CACHE_FILE), { recursive: true })
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf-8')
-  } catch (e) {
-    console.warn('[cache] 캐시 저장 실패:', e)
-  }
-  return cachedAt
+  cachedAt: string
 }
 
 const RSS_SOURCES = [
@@ -216,13 +194,10 @@ export async function GET(request: NextRequest) {
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
 
   if (!forceRefresh) {
-    const cached = readCache()
+    const cached = getCache<NewsCachePayload>(NEWS_CACHE_KEY)
     if (cached) {
-      const age = Date.now() - new Date(cached.cachedAt).getTime()
-      if (age < CACHE_TTL_MS) {
-        console.log('[cache] 캐시 반환 (age:', Math.round(age / 60000), 'min)')
-        return NextResponse.json({ ...cached.data, cachedAt: cached.cachedAt })
-      }
+      console.log('[cache] 캐시 반환')
+      return NextResponse.json({ ...cached.data, cachedAt: cached.cachedAt })
     }
   }
 
@@ -289,8 +264,8 @@ export async function GET(request: NextRequest) {
       fetchedAt: new Date().toISOString(),
     }
 
-    // 번역 없이 먼저 캐시 저장 & 응답 반환
-    const cachedAt = writeCache(responseData)
+    const cachedAt = new Date().toISOString()
+    setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
     const response = NextResponse.json({ ...responseData, cachedAt })
 
     // 번역은 백그라운드에서 실행 → 다음 캐시 요청부터 번역된 데이터 제공
@@ -298,7 +273,7 @@ export async function GET(request: NextRequest) {
     if (toTranslate.length > 0) {
       console.log(`[번역] 백그라운드 번역 시작 (${toTranslate.length}개)`)
       batchTranslate(toTranslate).then(() => {
-        writeCache(responseData)
+        setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
         console.log('[번역] 완료 — 캐시 업데이트')
       }).catch((e) => console.warn('[번역] 실패:', e))
     }

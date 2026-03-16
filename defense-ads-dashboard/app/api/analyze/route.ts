@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MetaAd, AdAnalysis } from '@/types/ad'
-import fs from 'fs'
-import path from 'path'
-import crypto from 'crypto'
+import { getCache, setCache } from '@/lib/cache'
 
 const MAX_BODY_SIZE = 100 * 1024 // 100KB
 const MAX_ADS = 10
-const CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
+const ADS_ANALYSIS_CACHE_KEY = 'ads_analysis'
+const ADS_ANALYSIS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 
 // Simple in-memory rate limiter (resets on server restart)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -26,11 +25,9 @@ function checkRateLimit(ip: string): boolean {
   return true
 }
 
-function getCacheFilePath(adIds: string[]): string {
-  const hash = crypto.createHash('md5').update([...adIds].sort().join(',')).digest('hex').slice(0, 12)
-  const cacheDir = path.join(process.cwd(), 'cache')
-  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
-  return path.join(cacheDir, `ads_analysis_${hash}.json`)
+interface AnalysisCachePayload {
+  analyses: AdAnalysis[]
+  cachedAt: string
 }
 
 export async function POST(request: NextRequest) {
@@ -96,23 +93,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const topAds = (ads as MetaAd[]).slice(0, 5)
-    const adIds = topAds.map((ad) => ad.id)
-    const cacheFile = getCacheFilePath(adIds)
-
     if (!forceRefresh) {
-      try {
-        if (fs.existsSync(cacheFile)) {
-          const raw = fs.readFileSync(cacheFile, 'utf-8')
-          const cached = JSON.parse(raw)
-          if (Date.now() - new Date(cached.cachedAt).getTime() < CACHE_TTL) {
-            return NextResponse.json(cached.analyses)
-          }
-        }
-      } catch {
-        // cache miss, proceed
+      const cached = getCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY)
+      if (cached) {
+        return NextResponse.json(cached.analyses)
       }
     }
+
+    const topAds = (ads as MetaAd[]).slice(0, 5)
 
     const adsData = topAds.map((ad, i) => ({
       index: i + 1,
@@ -179,11 +167,7 @@ ${JSON.stringify(adsData, null, 2)}
       )
     }
 
-    try {
-      fs.writeFileSync(cacheFile, JSON.stringify({ analyses, cachedAt: new Date().toISOString() }), 'utf-8')
-    } catch {
-      // cache write failure is non-critical
-    }
+    setCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY, { analyses, cachedAt: new Date().toISOString() }, ADS_ANALYSIS_CACHE_TTL)
 
     return NextResponse.json(analyses)
   } catch (error) {
