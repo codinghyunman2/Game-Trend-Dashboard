@@ -42,4 +42,5 @@ export interface NewsFetchResponse {
 export interface NewsCacheEntry {
   data: NewsFetchResponse;
   timestamp: number;
+  analyzedTop5?: AnalyzedNews[];
 }

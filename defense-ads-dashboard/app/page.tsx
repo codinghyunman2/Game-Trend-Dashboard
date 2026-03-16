@@ -30,7 +30,7 @@ export default function NewsHub() {
   const [selectedChannel, setSelectedChannel] = useState<string>('')
   const hasInitializedChannel = useRef(false)
 
-  const fetchAnalysis = useCallback(async (allNews: NewsItem[]) => {
+  const fetchAnalysis = useCallback(async (allNews: NewsItem[], cacheTimestamp?: number) => {
     if (allNews.length === 0) return
     setIsAnalyzing(true)
     try {
@@ -42,6 +42,21 @@ export default function NewsHub() {
       if (res.ok) {
         const data: AnalyzedNews[] = await res.json()
         setAnalyzedTop5(data)
+        // 분석 결과를 뉴스 캐시에 함께 저장
+        if (cacheTimestamp !== undefined) {
+          try {
+            const cached = sessionStorage.getItem(NEWS_CACHE_KEY)
+            if (cached) {
+              const entry: NewsCacheEntry = JSON.parse(cached)
+              if (entry.timestamp === cacheTimestamp) {
+                entry.analyzedTop5 = data
+                sessionStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(entry))
+              }
+            }
+          } catch (e) {
+            console.warn('Analysis cache write failed:', e)
+          }
+        }
       }
     } catch {
       // Analysis failure is non-critical
@@ -70,7 +85,11 @@ export default function NewsHub() {
               hasInitializedChannel.current = true
               setSelectedChannel(channels[0])
             }
-            fetchAnalysis(entry.data.allNews)
+            if (entry.analyzedTop5 && entry.analyzedTop5.length > 0) {
+              setAnalyzedTop5(entry.analyzedTop5)
+            } else {
+              fetchAnalysis(entry.data.allNews, entry.timestamp)
+            }
             return
           }
         }
@@ -101,15 +120,16 @@ export default function NewsHub() {
         setSelectedChannel(channels[0])
       }
 
+      const newTimestamp = Date.now()
       try {
-        const entry: NewsCacheEntry = { data, timestamp: Date.now() }
+        const entry: NewsCacheEntry = { data, timestamp: newTimestamp }
         sessionStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(entry))
       } catch (e) {
         console.warn('News cache write failed:', e)
       }
 
       setIsLoading(false)
-      fetchAnalysis(data.allNews)
+      fetchAnalysis(data.allNews, newTimestamp)
     } catch {
       setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       setIsLoading(false)
