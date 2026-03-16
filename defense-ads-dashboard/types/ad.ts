@@ -24,6 +24,7 @@ export interface AdAnalysis {
   rank: number
   score: number
   title: string
+  game_name: string
   summary: string
   hook: string
   strengths: string[]
@@ -31,8 +32,7 @@ export interface AdAnalysis {
 }
 
 export interface FetchAdsResponse {
-  scoredAds: MetaAd[]
-  unscoredAds: MetaAd[]
+  ads: MetaAd[]
   fetchedAt: string
   keywords: string[]
 }

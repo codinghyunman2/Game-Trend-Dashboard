@@ -21,21 +21,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const top5 = ads.slice(0, 5)
-
-    const adsData = top5.map((ad, i) => ({
+    const adsData = ads.slice(0, 5).map((ad, i) => ({
       index: i + 1,
-      id: ad.id,
-      title: ad.ad_creative_link_titles?.[0] || '(제목 없음)',
-      body: ad.ad_creative_bodies?.[0] || '(본문 없음)',
-      description: ad.ad_creative_link_descriptions?.[0] || '(설명 없음)',
-      page_name: ad.page_name || '(알 수 없음)',
-      start_date: ad.ad_delivery_start_time || '(알 수 없음)',
-      impressions: ad.impressions
-        ? `${ad.impressions.lower_bound} ~ ${ad.impressions.upper_bound}`
-        : '(없음)',
-      score: ad.score,
-      ad_snapshot_url: ad.ad_snapshot_url,
+      title: ad.ad_creative_link_titles?.[0] || '',
+      body: ad.ad_creative_bodies?.[0] || '',
+      ad_snapshot_url: ad.ad_snapshot_url || '',
     }))
 
     const client = new Anthropic({ apiKey })
@@ -58,7 +48,8 @@ ${JSON.stringify(adsData, null, 2)}
   {
     "rank": 1,
     "score": (100점 만점 종합 점수),
-    "title": "(광고 원문 제목 그대로)",
+    "title": "(광고 원문 제목 그대로 - title 필드)",
+    "game_name": "(게임명 - title 또는 본문에서 추출)",
     "summary": "(광고 전략 요약 2~3문장)",
     "hook": "(이 광고의 핵심 후킹 포인트)",
     "strengths": ["강점1", "강점2", "강점3"],
@@ -78,15 +69,10 @@ ${JSON.stringify(adsData, null, 2)}
     }
 
     let responseText = textContent.text.trim()
-
-    // Handle markdown code blocks
     const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
-    if (codeBlockMatch) {
-      responseText = codeBlockMatch[1].trim()
-    }
+    if (codeBlockMatch) responseText = codeBlockMatch[1].trim()
 
     const analyses: AdAnalysis[] = JSON.parse(responseText)
-
     return NextResponse.json(analyses)
   } catch (error) {
     console.error('Error in analyze route:', error)

@@ -9,10 +9,28 @@ import KeywordManager from '@/components/KeywordManager'
 import ShareButton from '@/components/ShareButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
-const CACHE_TTL = 60 * 60 * 1000 // 1 hour
+const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+
+type TabId = 'summary' | 'KR' | 'US' | 'JP' | 'TW'
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'summary', label: '요약' },
+  { id: 'KR', label: '🇰🇷 한국' },
+  { id: 'US', label: '🇺🇸 영어권' },
+  { id: 'JP', label: '🇯🇵 일본' },
+  { id: 'TW', label: '🇹🇼 대만' },
+]
+
+function formatLastUpdated(date: Date): string {
+  return date.toLocaleString('ko-KR', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 function InsightSection({ allAds }: { allAds: MetaAd[] }) {
-  // Top 3 게임 by copy count
   const pageCount: Record<string, number> = {}
   for (const ad of allAds) {
     if (ad.page_name) pageCount[ad.page_name] = (pageCount[ad.page_name] ?? 0) + 1
@@ -21,7 +39,6 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
 
-  // 최근 7일 신규 광고
   const now = Date.now()
   const recentCount = allAds.filter((ad) => {
     if (!ad.ad_delivery_start_time) return false
@@ -29,7 +46,6 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
     return diff <= 7
   }).length
 
-  // 국가별 분포
   const countryCodes = ['KR', 'JP', 'TW', 'US']
   const countryCount: Record<string, number> = { KR: 0, JP: 0, TW: 0, US: 0, OTHER: 0 }
   for (const ad of allAds) {
@@ -42,7 +58,6 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
     <section className="mb-8">
       <h2 className="text-lg font-semibold text-white mb-4">📊 소재 인사이트</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Top 3 게임 */}
         <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
           <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🔥 가장 많은 소재 집행</p>
           {top3Games.length === 0 ? (
@@ -64,7 +79,6 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
           )}
         </div>
 
-        {/* 신규 광고 */}
         <div className="rounded-xl bg-bg-card border border-gray-800 p-4 flex flex-col justify-center">
           <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">⚡ 이번 주 신규 소재</p>
           <p className="text-3xl font-bold text-white">
@@ -74,7 +88,6 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
           <p className="text-xs text-gray-500 mt-1">최근 7일 내 신규 집행 감지</p>
         </div>
 
-        {/* 국가별 분포 */}
         <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
           <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🌍 국가별 광고 분포</p>
           <div className="flex flex-col gap-1.5">
@@ -97,6 +110,28 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
   )
 }
 
+function CountryAdGrid({ ads, countryCode }: { ads: MetaAd[]; countryCode: string }) {
+  const filtered = ads
+    .filter((ad) => ad.detectedCountry === countryCode)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+
+  if (filtered.length === 0) {
+    return (
+      <div className="rounded-xl bg-bg-card border border-gray-800 p-8 text-center">
+        <p className="text-gray-400">해당 국가 광고가 없습니다.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {filtered.map((ad) => (
+        <AdCard key={ad.id} ad={ad as MetaAd & { score: number }} />
+      ))}
+    </div>
+  )
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -105,28 +140,26 @@ function DashboardContent() {
   const initialKeywords = keywordsParam.split(',').map((k) => k.trim()).filter(Boolean)
 
   const [keywords, setKeywords] = useState<string[]>(initialKeywords)
-  const [scoredAds, setScoredAds] = useState<MetaAd[]>([])
-  const [unscoredAds, setUnscoredAds] = useState<MetaAd[]>([])
+  const [ads, setAds] = useState<MetaAd[]>([])
   const [analyses, setAnalyses] = useState<AdAnalysis[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'score' | 'date'>('score')
-  const [showUnscored, setShowUnscored] = useState(false)
-  const [countryFilter, setCountryFilter] = useState<string>('ALL')
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [activeTab, setActiveTab] = useState<TabId>('summary')
 
   const getCacheKey = useCallback((kws: string[]) => {
-    return `ads_cache_${[...kws].sort().join(',')}`
+    return `ads_cache_v3_${[...kws].sort().join(',')}`
   }, [])
 
-  const fetchAnalysis = useCallback(async (ads: MetaAd[]) => {
-    if (ads.length === 0) return
+  const fetchAnalysis = useCallback(async (topAds: MetaAd[]) => {
+    if (topAds.length === 0) return
     setIsAnalyzing(true)
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ads: ads.slice(0, 5) }),
+        body: JSON.stringify({ ads: topAds.slice(0, 5) }),
       })
       if (res.ok) {
         const data: AdAnalysis[] = await res.json()
@@ -139,27 +172,29 @@ function DashboardContent() {
     }
   }, [])
 
-  const fetchAds = useCallback(async (kws: string[]) => {
+  const fetchAds = useCallback(async (kws: string[], forceRefresh = false) => {
     setIsLoading(true)
     setError(null)
     setAnalyses(null)
 
-    // Check cache
     const cacheKey = getCacheKey(kws)
-    try {
-      const cached = sessionStorage.getItem(cacheKey)
-      if (cached) {
-        const entry: CacheEntry = JSON.parse(cached)
-        if (Date.now() - entry.timestamp < CACHE_TTL) {
-          setScoredAds(entry.data.scoredAds)
-          setUnscoredAds(entry.data.unscoredAds)
-          setIsLoading(false)
-          fetchAnalysis(entry.data.scoredAds)
-          return
+
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(cacheKey)
+        if (cached) {
+          const entry: CacheEntry = JSON.parse(cached)
+          if (Date.now() - entry.timestamp < CACHE_TTL) {
+            setAds(entry.data.ads)
+            setLastUpdated(new Date(entry.timestamp))
+            setIsLoading(false)
+            fetchAnalysis(entry.data.ads)
+            return
+          }
         }
+      } catch {
+        // Cache read failure is non-critical
       }
-    } catch {
-      // Cache read failure is non-critical
     }
 
     try {
@@ -177,19 +212,20 @@ function DashboardContent() {
       }
 
       const response: FetchAdsResponse = data
-      setScoredAds(response.scoredAds)
-      setUnscoredAds(response.unscoredAds)
+      setAds(response.ads)
 
-      // Save to cache
+      const now = Date.now()
+      setLastUpdated(new Date(now))
+
       try {
-        const entry: CacheEntry = { data: response, timestamp: Date.now() }
+        const entry: CacheEntry = { data: response, timestamp: now }
         sessionStorage.setItem(cacheKey, JSON.stringify(entry))
       } catch {
         // Cache write failure is non-critical
       }
 
       setIsLoading(false)
-      fetchAnalysis(response.scoredAds)
+      fetchAnalysis(response.ads)
     } catch {
       setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       setIsLoading(false)
@@ -208,31 +244,15 @@ function DashboardContent() {
     fetchAds(newKeywords)
   }
 
-  const filteredScoredAds = countryFilter === 'ALL'
-    ? scoredAds
-    : scoredAds.filter((ad) => ad.detectedCountry === countryFilter)
+  const handleRefresh = () => {
+    fetchAds(keywords, true)
+  }
 
-  const filteredUnscoredAds = countryFilter === 'ALL'
-    ? unscoredAds
-    : unscoredAds.filter((ad) => ad.detectedCountry === countryFilter)
-
-  const sortedScoredAds = [...filteredScoredAds].sort((a, b) => {
-    if (sortBy === 'score') {
-      return (b.score ?? 0) - (a.score ?? 0)
-    }
-    const dateA = a.ad_delivery_start_time ? new Date(a.ad_delivery_start_time).getTime() : 0
-    const dateB = b.ad_delivery_start_time ? new Date(b.ad_delivery_start_time).getTime() : 0
-    return dateB - dateA
-  })
-
-  // Error states
   if (error === 'META_ACCESS_TOKEN_NOT_SET') {
     return (
       <div className="min-h-screen bg-bg-base flex items-center justify-center p-4">
         <div className="max-w-lg w-full rounded-xl bg-bg-card border border-gray-800 p-8">
-          <h2 className="text-xl font-bold text-white mb-4">
-            Meta API 토큰 설정 필요
-          </h2>
+          <h2 className="text-xl font-bold text-white mb-4">Meta API 토큰 설정 필요</h2>
           <p className="text-gray-300 mb-4">
             광고 데이터를 가져오려면 Meta Graph API 액세스 토큰이 필요합니다.
           </p>
@@ -240,7 +260,7 @@ function DashboardContent() {
             <p className="text-gray-500 mb-2"># .env.local 파일에 추가:</p>
             <p>META_ACCESS_TOKEN=여기에_토큰_입력</p>
           </div>
-          <div className="mt-4 text-sm text-gray-400">
+          <div className="mt-4 text-sm text-gray-400 space-y-1">
             <p>1. <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:underline">Meta for Developers</a>에서 앱을 생성하세요.</p>
             <p>2. Marketing API 권한을 추가하세요.</p>
             <p>3. 액세스 토큰을 발급받아 .env.local에 저장하세요.</p>
@@ -253,27 +273,42 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-bg-base">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         {/* Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">
-              디펜스 광고 대시보드
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              디펜스 장르 모바일 게임 광고 수집 및 분석
-            </p>
+        <header className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                🎮 디펜스 게임 광고 트렌드 대시보드
+              </h1>
+              {lastUpdated && (
+                <p className="text-gray-500 text-sm mt-1">
+                  마지막 업데이트: {formatLastUpdated(lastUpdated)}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-bg-card border border-gray-700 text-sm text-gray-300 hover:text-white hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className={isLoading ? 'animate-spin' : ''}>🔄</span>
+                새로고침
+              </button>
+              <ShareButton />
+            </div>
           </div>
-          <ShareButton />
         </header>
 
         {/* Keyword Manager */}
-        <section className="mb-8">
+        <section className="mb-6">
           <KeywordManager keywords={keywords} onChange={handleKeywordsChange} />
         </section>
 
-        {/* 한국 광고 섹션 */}
-        <section className="mb-8 rounded-xl bg-bg-card border border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* 한국 광고 보기 */}
+        <section className="mb-8 rounded-xl bg-bg-card border border-gray-700 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <a
             href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&content_languages[0]=ko&country=KR&is_targeted_country=false&media_type=all&q=%EB%94%94%ED%8E%9C%EC%8A%A4&search_type=keyword_unordered&sort_data[mode]=relevancy_monthly_grouped&sort_data[direction]=desc"
             target="_blank"
@@ -294,117 +329,42 @@ function DashboardContent() {
             <p className="text-red-400 text-lg mb-2">오류 발생</p>
             <p className="text-gray-400">{error}</p>
           </div>
-        ) : scoredAds.length === 0 && unscoredAds.length === 0 ? (
+        ) : ads.length === 0 ? (
           <div className="rounded-xl bg-bg-card border border-gray-800 p-8 text-center">
             <p className="text-gray-400 text-lg mb-2">검색 결과 없음</p>
-            <p className="text-gray-500">
-              다른 키워드로 검색해보세요.
-            </p>
+            <p className="text-gray-500">다른 키워드로 검색해보세요.</p>
           </div>
         ) : (
           <>
-            {/* Country filter */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {[
-                { code: 'ALL', label: '전체' },
-                { code: 'KR', label: '🇰🇷 한국' },
-                { code: 'JP', label: '🇯🇵 일본' },
-                { code: 'TW', label: '🇹🇼 대만' },
-                { code: 'US', label: '🇺🇸 영어권' },
-              ].map(({ code, label }) => (
+            {/* Tabs */}
+            <div className="flex gap-1 mb-6 border-b border-gray-800">
+              {TABS.map((tab) => (
                 <button
-                  key={code}
-                  onClick={() => setCountryFilter(code)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    countryFilter === code
-                      ? 'bg-accent-blue text-white ring-2 ring-accent-blue/50'
-                      : 'bg-bg-card text-gray-400 hover:text-white border border-gray-700'
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 ${
+                    activeTab === tab.id
+                      ? 'text-white border-accent-purple'
+                      : 'text-gray-400 border-transparent hover:text-gray-200'
                   }`}
                 >
-                  {label}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* Sort toggle */}
-            <div className="flex gap-2 mb-6">
-              <button
-                onClick={() => setSortBy('score')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  sortBy === 'score'
-                    ? 'bg-accent-purple text-white'
-                    : 'bg-bg-card text-gray-400 hover:text-white border border-gray-700'
-                }`}
-              >
-                점수순
-              </button>
-              <button
-                onClick={() => setSortBy('date')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  sortBy === 'date'
-                    ? 'bg-accent-purple text-white'
-                    : 'bg-bg-card text-gray-400 hover:text-white border border-gray-700'
-                }`}
-              >
-                최신순
-              </button>
-            </div>
-
-            {/* 소재 인사이트 */}
-            <InsightSection allAds={[...scoredAds, ...unscoredAds]} />
-
-            {/* AI Analysis Top 3 */}
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                AI 분석 Top 3
-              </h2>
-              <Top3Banner analyses={analyses} isLoading={isAnalyzing} />
-            </section>
-
-            {/* Scored Ads Grid */}
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold text-white mb-4">
-                광고 목록
-                <span className="text-sm text-gray-400 font-normal ml-2">
-                  ({sortedScoredAds.length}개)
-                </span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedScoredAds.map((ad) => (
-                  <AdCard key={ad.id} ad={ad as MetaAd & { score: number }} />
-                ))}
-              </div>
-            </section>
-
-            {/* Unscored Ads */}
-            {filteredUnscoredAds.length > 0 && (
-              <section>
-                <button
-                  onClick={() => setShowUnscored(!showUnscored)}
-                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
-                >
-                  <span
-                    className={`transition-transform ${showUnscored ? 'rotate-90' : ''}`}
-                  >
-                    &#x25B6;
-                  </span>
-                  <span className="text-lg font-semibold">
-                    노출 미집계 광고
-                  </span>
-                  <span className="text-sm font-normal">
-                    ({filteredUnscoredAds.length}개)
-                  </span>
-                </button>
-                {showUnscored && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredUnscoredAds.map((ad) => (
-                      <AdCard
-                        key={ad.id}
-                        ad={ad as MetaAd & { score: number }}
-                      />
-                    ))}
-                  </div>
-                )}
+            {/* Tab Content */}
+            {activeTab === 'summary' ? (
+              <>
+                <InsightSection allAds={ads} />
+                <section className="mb-8">
+                  <h2 className="text-lg font-semibold text-white mb-4">⚡ AI 분석 Top 3</h2>
+                  <Top3Banner analyses={analyses} isLoading={isAnalyzing} />
+                </section>
+              </>
+            ) : (
+              <section className="mb-8">
+                <CountryAdGrid ads={ads} countryCode={activeTab} />
               </section>
             )}
           </>

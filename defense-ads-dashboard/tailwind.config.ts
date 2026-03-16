@@ -14,6 +14,15 @@ const config: Config = {
         'accent-purple': '#7c3aed',
         'accent-blue': '#2563eb',
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        fadeIn: 'fadeIn 0.4s ease-out',
+      },
     },
   },
   plugins: [],
