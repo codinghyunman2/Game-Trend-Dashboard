@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { NewsItem, AnalyzedNews, NewsFetchResponse, NewsCacheEntry } from '@/types/news'
 import NewsTop5 from '@/components/news/NewsTop5'
 import NewsCard from '@/components/news/NewsCard'
@@ -28,6 +28,7 @@ export default function NewsHub() {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<string>('')
+  const hasInitializedChannel = useRef(false)
 
   const fetchAnalysis = useCallback(async (allNews: NewsItem[]) => {
     if (allNews.length === 0) return
@@ -65,7 +66,8 @@ export default function NewsHub() {
             setIsLoading(false)
             // Set default channel
             const channels = Object.keys(entry.data.byChannel)
-            if (channels.length > 0 && !selectedChannel) {
+            if (channels.length > 0 && !hasInitializedChannel.current) {
+              hasInitializedChannel.current = true
               setSelectedChannel(channels[0])
             }
             fetchAnalysis(entry.data.allNews)
@@ -94,7 +96,8 @@ export default function NewsHub() {
 
       // Set default channel
       const channels = Object.keys(data.byChannel)
-      if (channels.length > 0) {
+      if (channels.length > 0 && !hasInitializedChannel.current) {
+        hasInitializedChannel.current = true
         setSelectedChannel(channels[0])
       }
 
@@ -111,13 +114,11 @@ export default function NewsHub() {
       setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       setIsLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchAnalysis])
 
   useEffect(() => {
     fetchNews()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fetchNews])
 
   // Build channel name map
   const channelNames: Record<string, string> = {}
@@ -133,14 +134,14 @@ export default function NewsHub() {
   const channelItems = newsData && selectedChannel ? newsData.byChannel[selectedChannel] ?? [] : []
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-bg)' }}>
+    <div className="min-h-screen bg-theme-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
         <header className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--color-accent)' }}>
+              <h1 className="text-2xl sm:text-3xl font-bold text-theme-accent">
                 2026 게임 트렌드 for 로켓단게임즈
               </h1>
             </div>
@@ -149,28 +150,20 @@ export default function NewsHub() {
                 <button
                   onClick={() => fetchNews(false)}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    background: 'var(--color-card)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-text-secondary)',
-                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
                 >
                   새로고침
                 </button>
                 <button
                   onClick={() => fetchNews(true)}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
-                  style={{
-                    background: 'var(--color-accent)',
-                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-theme-accent"
                 >
                   최신 데이터
                 </button>
               </div>
               {lastUpdated && (
-                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                <p className="text-xs text-theme-secondary">
                   마지막 업데이트: {formatLastUpdated(lastUpdated)}
                 </p>
               )}
@@ -182,40 +175,32 @@ export default function NewsHub() {
           <LoadingSpinner />
         ) : error ? (
           <div
-            className="rounded-xl p-8 text-center"
-            style={{
-              background: 'var(--color-card)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              boxShadow: 'var(--card-shadow)',
-            }}
+            className="rounded-xl p-8 text-center bg-theme-card border border-theme-border"
+            style={{ border: '1px solid rgba(239,68,68,0.3)', boxShadow: 'var(--card-shadow)' }}
           >
             <p className="text-red-400 text-lg mb-2">오류 발생</p>
-            <p style={{ color: 'var(--color-text-secondary)' }}>{error}</p>
+            <p className="text-theme-secondary">{error}</p>
           </div>
         ) : newsData && newsData.allNews.length === 0 ? (
           <div
-            className="rounded-xl p-8 text-center"
-            style={{
-              background: 'var(--color-card)',
-              border: '1px solid var(--color-border)',
-              boxShadow: 'var(--card-shadow)',
-            }}
+            className="rounded-xl p-8 text-center bg-theme-card border border-theme-border"
+            style={{ boxShadow: 'var(--card-shadow)' }}
           >
-            <p className="text-lg mb-2" style={{ color: 'var(--color-text-secondary)' }}>뉴스가 없습니다</p>
-            <p style={{ color: 'var(--color-text-secondary)' }}>잠시 후 다시 시도해주세요.</p>
+            <p className="text-lg mb-2 text-theme-secondary">뉴스가 없습니다</p>
+            <p className="text-theme-secondary">잠시 후 다시 시도해주세요.</p>
           </div>
         ) : newsData && (
           <>
             {/* AI Top 5 */}
             <section className="mb-10">
-              <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>AI 오늘의 주요뉴스 Top 5</h2>
+              <h2 className="text-lg font-semibold mb-4 text-theme-text">AI 오늘의 주요뉴스 Top 5</h2>
               <NewsTop5 items={analyzedTop5} loading={isAnalyzing} />
             </section>
 
             {/* Defense Top 3 */}
             {newsData.defenseTop3.length > 0 && (
               <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>디펜스 장르 Top 3</h2>
+                <h2 className="text-lg font-semibold mb-4 text-theme-text">디펜스 장르 Top 3</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {newsData.defenseTop3.map((item, index) => (
                     <NewsCard key={`${item.id}-${index}`} item={item} />
@@ -227,7 +212,7 @@ export default function NewsHub() {
             {/* Mobile Top 3 */}
             {newsData.mobileTop3.length > 0 && (
               <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>모바일 플랫폼 Top 3</h2>
+                <h2 className="text-lg font-semibold mb-4 text-theme-text">모바일 플랫폼 Top 3</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {newsData.mobileTop3.map((item, index) => (
                     <NewsCard key={`${item.id}-${index}`} item={item} />
@@ -239,7 +224,7 @@ export default function NewsHub() {
             {/* Channel Browse */}
             {channels.length > 0 && (
               <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>채널별 전체보기</h2>
+                <h2 className="text-lg font-semibold mb-4 text-theme-text">채널별 전체보기</h2>
                 <ChannelTabs
                   channels={channels}
                   selected={selectedChannel}
@@ -249,14 +234,10 @@ export default function NewsHub() {
                 <div className="mt-4 space-y-3">
                   {channelItems.length === 0 ? (
                     <div
-                      className="rounded-xl p-6 text-center"
-                      style={{
-                        background: 'var(--color-card)',
-                        border: '1px solid var(--color-border)',
-                        boxShadow: 'var(--card-shadow)',
-                      }}
+                      className="rounded-xl p-6 text-center bg-theme-card border border-theme-border"
+                      style={{ boxShadow: 'var(--card-shadow)' }}
                     >
-                      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>이 채널의 최근 뉴스가 없습니다.</p>
+                      <p className="text-sm text-theme-secondary">이 채널의 최근 뉴스가 없습니다.</p>
                     </div>
                   ) : (
                     channelItems.map((item, index) => (

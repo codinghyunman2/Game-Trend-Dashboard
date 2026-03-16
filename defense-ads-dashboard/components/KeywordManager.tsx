@@ -36,19 +36,14 @@ export default function KeywordManager({ keywords, onChange }: KeywordManagerPro
         {keywords.map((keyword) => (
           <span
             key={keyword}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm"
-            style={{
-              background: 'var(--color-accent-soft)',
-              border: '1px solid var(--color-accent)',
-              color: 'var(--color-text-primary)',
-            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-theme-accent text-theme-text"
+            style={{ background: 'var(--color-accent-soft)' }}
           >
             {keyword}
             <button
               onClick={() => removeKeyword(keyword)}
               disabled={keywords.length <= 1}
-              className="ml-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              style={{ color: 'var(--color-text-secondary)' }}
+              className="ml-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-theme-secondary"
               aria-label={`${keyword} 삭제`}
             >
               &times;
@@ -63,18 +58,12 @@ export default function KeywordManager({ keywords, onChange }: KeywordManagerPro
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="키워드 입력..."
-          className="px-3 py-1.5 rounded-lg text-sm focus:outline-none transition-colors"
-          style={{
-            background: 'var(--color-card)',
-            border: '1px solid var(--color-border)',
-            color: 'var(--color-text-primary)',
-          }}
+          className="px-3 py-1.5 rounded-lg text-sm focus:outline-none transition-colors bg-theme-card border border-theme-border text-theme-text"
         />
         <button
           onClick={addKeyword}
           disabled={!input.trim()}
-          className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          style={{ background: 'var(--color-accent)' }}
+          className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors bg-theme-accent"
           onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'var(--color-accent-hover)' }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-accent)' }}
         >

@@ -56,12 +56,8 @@ export default function AdCard({ ad }: AdCardProps) {
 
   return (
     <div
-      className="rounded-xl p-5 flex flex-col gap-4 transition-colors"
-      style={{
-        background: 'var(--color-card)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--card-shadow)',
-      }}
+      className="rounded-xl p-5 flex flex-col gap-4 transition-colors bg-theme-card border border-theme-border"
+      style={{ boxShadow: 'var(--card-shadow)' }}
     >
       {/* Copy badge */}
       {copyBadge && (
@@ -102,17 +98,17 @@ export default function AdCard({ ad }: AdCardProps) {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold leading-snug line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
+          <h3 className="text-base font-semibold leading-snug line-clamp-2 text-theme-text">
             {title}
           </h3>
           {ad.page_name && (
-            <p className="text-sm mt-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>{ad.page_name}</p>
+            <p className="text-sm mt-1 truncate text-theme-secondary">{ad.page_name}</p>
           )}
         </div>
       </div>
 
       {/* Impressions & Date */}
-      <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+      <div className="flex flex-wrap items-center gap-3 text-xs text-theme-secondary">
         {ad.impressions && (
           <span
             className="px-2 py-1 rounded"
@@ -142,13 +138,12 @@ export default function AdCard({ ad }: AdCardProps) {
 
       {/* Body text */}
       {body && (
-        <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+        <div className="text-sm leading-relaxed text-theme-secondary">
           <p>{expanded ? body : truncatedBody}</p>
           {body.length > 120 && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="mt-1 text-xs hover:underline"
-              style={{ color: 'var(--color-accent)' }}
+              className="mt-1 text-xs hover:underline text-theme-accent"
             >
               {expanded ? '접기' : '더 보기'}
             </button>
@@ -162,8 +157,7 @@ export default function AdCard({ ad }: AdCardProps) {
           href={ad.ad_snapshot_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm transition-colors mt-auto hover:underline"
-          style={{ color: 'var(--color-accent)' }}
+          className="inline-flex items-center gap-1 text-sm transition-colors mt-auto hover:underline text-theme-accent"
         >
           광고 보기 &rarr;
         </a>

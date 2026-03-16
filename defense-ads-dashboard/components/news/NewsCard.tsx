@@ -17,38 +17,29 @@ function timeAgo(dateStr: string): string {
 export default function NewsCard({ item }: { item: NewsItem }) {
   return (
     <div
-      className="rounded-xl p-4 transition-all duration-200"
-      style={{
-        background: 'var(--color-card)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--card-shadow)',
-      }}
+      className="rounded-xl p-4 transition-all duration-200 bg-theme-card border border-theme-border"
+      style={{ boxShadow: 'var(--card-shadow)' }}
     >
       <div className="flex items-center gap-2 mb-2">
         <span
-          className="text-xs px-2 py-0.5 rounded-full"
-          style={{
-            background: 'var(--color-accent-soft)',
-            border: '1px solid var(--color-accent)',
-            color: 'var(--color-accent)',
-          }}
+          className="text-xs px-2 py-0.5 rounded-full border border-theme-accent text-theme-accent"
+          style={{ background: 'var(--color-accent-soft)' }}
         >
           {item.source}
         </span>
-        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{timeAgo(item.pubDate)}</span>
+        <span className="text-xs text-theme-secondary">{timeAgo(item.pubDate)}</span>
       </div>
-      <h3 className="text-sm font-semibold leading-snug mb-2 line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
+      <h3 className="text-sm font-semibold leading-snug mb-2 line-clamp-2 text-theme-text">
         {item.titleKo || item.title}
       </h3>
-      <p className="text-xs leading-relaxed mb-3 line-clamp-1" style={{ color: 'var(--color-text-secondary)' }}>
+      <p className="text-xs leading-relaxed mb-3 line-clamp-1 text-theme-secondary">
         {item.summaryKo || item.summary}
       </p>
       <a
         href={item.link}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:underline"
-        style={{ color: 'var(--color-accent)' }}
+        className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:underline text-theme-accent"
       >
         원문보기
       </a>

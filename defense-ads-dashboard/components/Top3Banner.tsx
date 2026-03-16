@@ -18,12 +18,8 @@ function getScoreColor(score: number): string {
 function SkeletonCard({ rank }: { rank: number }) {
   return (
     <div
-      className="rounded-xl p-6"
-      style={{
-        background: 'var(--color-card)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--card-shadow)',
-      }}
+      className="rounded-xl p-6 bg-theme-card border border-theme-border"
+      style={{ boxShadow: 'var(--card-shadow)' }}
     >
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
@@ -37,8 +33,8 @@ function SkeletonCard({ rank }: { rank: number }) {
 
       {/* Hook */}
       <div
-        className="mb-3 px-3 py-2 rounded-lg"
-        style={{ background: 'var(--color-accent-soft)', border: '1px solid var(--color-border)' }}
+        className="mb-3 px-3 py-2 rounded-lg border border-theme-border"
+        style={{ background: 'var(--color-accent-soft)' }}
       >
         <div className="h-3 bg-gray-700 rounded animate-pulse w-full" />
       </div>
@@ -57,7 +53,7 @@ function SkeletonCard({ rank }: { rank: number }) {
         <div className="h-3 bg-gray-700 rounded animate-pulse w-3/5" />
       </div>
 
-      <p className="text-xs animate-pulse" style={{ color: 'var(--color-text-secondary)' }}>AI 분석 중...</p>
+      <p className="text-xs animate-pulse text-theme-secondary">AI 분석 중...</p>
     </div>
   )
 }
@@ -80,21 +76,17 @@ export default function Top3Banner({ analyses, isLoading }: Top3BannerProps) {
       {analyses.map((analysis, index) => (
         <div
           key={analysis.rank}
-          className="rounded-xl p-6 transition-colors animate-fadeIn"
-          style={{
-            background: 'var(--color-card)',
-            border: '1px solid var(--color-border)',
-            boxShadow: 'var(--card-shadow)',
-          }}
+          className="rounded-xl p-6 transition-colors animate-fadeIn bg-theme-card border border-theme-border"
+          style={{ boxShadow: 'var(--card-shadow)' }}
         >
           {/* Header */}
           <div className="flex items-center gap-3 mb-4">
             <span className="text-3xl">{medals[index] || ''}</span>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold leading-snug line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
+              <h3 className="text-base font-semibold leading-snug line-clamp-2 text-theme-text">
                 {analysis.title}
               </h3>
-              <p className="text-sm font-bold mt-0.5 truncate" style={{ color: 'var(--color-text-primary)' }}>
+              <p className="text-sm font-bold mt-0.5 truncate text-theme-text">
                 {analysis.game_name}
               </p>
             </div>
@@ -105,20 +97,20 @@ export default function Top3Banner({ analyses, isLoading }: Top3BannerProps) {
 
           {/* Hook */}
           <div
-            className="mb-3 px-3 py-2 rounded-lg"
-            style={{ background: 'var(--color-accent-soft)', border: '1px solid var(--color-accent)' }}
+            className="mb-3 px-3 py-2 rounded-lg border border-theme-accent"
+            style={{ background: 'var(--color-accent-soft)' }}
           >
-            <p className="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>{analysis.hook}</p>
+            <p className="text-sm font-medium text-theme-accent">{analysis.hook}</p>
           </div>
 
           {/* Summary */}
-          <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--color-text-secondary)' }}>{analysis.summary}</p>
+          <p className="text-sm leading-relaxed mb-3 text-theme-secondary">{analysis.summary}</p>
 
           {/* Strengths */}
           <ul className="space-y-1 mb-4">
             {analysis.strengths.map((strength, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                <span className="mt-0.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }}>&#x25B8;</span>
+              <li key={i} className="flex items-start gap-2 text-sm text-theme-secondary">
+                <span className="mt-0.5 flex-shrink-0 text-theme-accent">&#x25B8;</span>
                 {strength}
               </li>
             ))}
@@ -129,8 +121,7 @@ export default function Top3Banner({ analyses, isLoading }: Top3BannerProps) {
               href={analysis.ad_snapshot_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-              style={{ background: 'var(--color-accent)' }}
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors bg-theme-accent"
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-accent-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-accent)')}
             >

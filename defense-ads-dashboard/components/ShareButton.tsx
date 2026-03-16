@@ -18,12 +18,8 @@ export default function ShareButton() {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-      style={{
-        background: 'transparent',
-        border: '1px solid var(--color-border)',
-        color: 'var(--color-text-secondary)',
-      }}
+      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-theme-border text-theme-secondary"
+      style={{ background: 'transparent' }}
       onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
       onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
     >

@@ -20,22 +20,18 @@ export default function NewsListItem({ item }: { item: NewsItem }) {
 
   return (
     <div
-      className="p-4 rounded-xl transition-colors"
-      style={{
-        background: 'var(--color-card)',
-        border: '1px solid var(--color-border)',
-        boxShadow: 'var(--card-shadow)',
-      }}
+      className="p-4 rounded-xl transition-colors bg-theme-card border border-theme-border"
+      style={{ boxShadow: 'var(--card-shadow)' }}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold leading-snug flex-1 mr-3" style={{ color: 'var(--color-text-primary)' }}>
+        <h3 className="text-sm font-semibold leading-snug flex-1 mr-3 text-theme-text">
           {item.titleKo || item.title}
         </h3>
-        <span className="text-xs whitespace-nowrap shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
+        <span className="text-xs whitespace-nowrap shrink-0 text-theme-secondary">
           {timeAgo(item.pubDate)}
         </span>
       </div>
-      <p className="text-xs leading-relaxed mb-2 line-clamp-2" style={{ color: 'var(--color-text-secondary)' }}>
+      <p className="text-xs leading-relaxed mb-2 line-clamp-2 text-theme-secondary">
         {item.summaryKo || item.summary}
       </p>
 
@@ -43,34 +39,28 @@ export default function NewsListItem({ item }: { item: NewsItem }) {
         <>
           <button
             onClick={() => setShowOriginal(!showOriginal)}
-            className="text-xs transition-colors mb-2"
-            style={{ color: 'var(--color-text-secondary)' }}
+            className="text-xs transition-colors mb-2 text-theme-secondary"
           >
             {showOriginal ? '번역본 보기' : '원문 보기'}
           </button>
           {showOriginal && (
             <div
-              className="mt-2 p-3 rounded-lg"
-              style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-              }}
+              className="mt-2 p-3 rounded-lg bg-theme-surface border border-theme-border"
             >
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>{item.title}</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{item.summary}</p>
+              <p className="text-xs font-medium mb-1 text-theme-text">{item.title}</p>
+              <p className="text-xs text-theme-secondary">{item.summary}</p>
             </div>
           )}
         </>
       )}
 
       <div className="flex items-center justify-between mt-2">
-        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{item.source}</span>
+        <span className="text-xs text-theme-secondary">{item.source}</span>
         <a
           href={item.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:underline"
-          style={{ color: 'var(--color-accent)' }}
+          className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:underline text-theme-accent"
         >
           원문 →
         </a>
