@@ -17,7 +17,7 @@ export default function ChannelTabs({
         <button
           key={key}
           onClick={() => onSelect(key)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`px-3 py-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] ${
             selected === key
               ? 'bg-accent-purple/20 text-purple-300 border border-accent-purple/40'
               : 'bg-[#1a1a2e] text-gray-400 border border-gray-800 hover:text-gray-200 hover:border-gray-600'

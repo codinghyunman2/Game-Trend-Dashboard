@@ -194,7 +194,7 @@ export default function NewsHub() {
             {newsData.defenseTop3.length > 0 && (
               <section className="mb-10">
                 <h2 className="text-lg font-semibold text-white mb-4">디펜스 장르 Top 3</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {newsData.defenseTop3.map((item, index) => (
                     <NewsCard key={`${item.id}-${index}`} item={item} />
                   ))}
@@ -206,7 +206,7 @@ export default function NewsHub() {
             {newsData.mobileTop3.length > 0 && (
               <section className="mb-10">
                 <h2 className="text-lg font-semibold text-white mb-4">모바일 플랫폼 Top 3</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {newsData.mobileTop3.map((item, index) => (
                     <NewsCard key={`${item.id}-${index}`} item={item} />
                   ))}

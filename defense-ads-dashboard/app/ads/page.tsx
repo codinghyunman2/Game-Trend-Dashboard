@@ -56,7 +56,7 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
   return (
     <section className="mb-8">
       <h2 className="text-lg font-semibold text-white mb-4">📊 소재 인사이트</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
           <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🔥 가장 많은 소재 집행</p>
           {top3Games.length === 0 ? (
@@ -345,12 +345,12 @@ function DashboardContent() {
         ) : (
           <>
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 border-b border-gray-800">
+            <div className="flex gap-1 mb-6 border-b border-gray-800 overflow-x-auto scrollbar-hide">
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 ${
+                  className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 whitespace-nowrap min-h-[44px] ${
                     activeTab === tab.id
                       ? 'text-white border-accent-purple'
                       : 'text-gray-400 border-transparent hover:text-gray-200'

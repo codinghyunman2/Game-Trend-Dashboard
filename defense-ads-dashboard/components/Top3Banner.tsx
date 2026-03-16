@@ -55,7 +55,7 @@ function SkeletonCard({ rank }: { rank: number }) {
 export default function Top3Banner({ analyses, isLoading }: Top3BannerProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <SkeletonCard rank={1} />
         <SkeletonCard rank={2} />
         <SkeletonCard rank={3} />

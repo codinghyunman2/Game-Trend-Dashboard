@@ -99,7 +99,7 @@ export default function AdCard({ ad }: AdCardProps) {
             {title}
           </h3>
           {ad.page_name && (
-            <p className="text-sm text-gray-400 mt-1">{ad.page_name}</p>
+            <p className="text-sm text-gray-400 mt-1 truncate">{ad.page_name}</p>
           )}
         </div>
       </div>

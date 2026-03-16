@@ -28,7 +28,7 @@ export default function NewsListItem({ item }: { item: NewsItem }) {
           {timeAgo(item.pubDate)}
         </span>
       </div>
-      <p className="text-gray-400 text-xs leading-relaxed mb-2">
+      <p className="text-gray-400 text-xs leading-relaxed mb-2 line-clamp-2">
         {item.summaryKo || item.summary}
       </p>
 
