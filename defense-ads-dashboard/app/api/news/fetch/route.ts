@@ -55,6 +55,19 @@ const RSS_SOURCES = [
 
 type RSSSource = typeof RSS_SOURCES[number]
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#8220;/g, '\u201C')
+    .replace(/&#8221;/g, '\u201D')
+}
+
 function classifyCategory(title: string, summary: string): 'defense' | 'mobile' | 'general' {
   const text = `${title} ${summary}`.toLowerCase()
   const defenseKeywords = ['디펜스', '타워디펜스', '타워', '수성', '방어', '성채', '요새', 'tower defense', 'defense', 'tower', 'defend', 'fortress', 'castle defense', 'kingdom defense', 'dungeon defense', 'strategy']
@@ -81,7 +94,7 @@ function parseRSSItems(xml: string, source: RSSSource): NewsItem[] {
       return match?.[1]?.trim() ?? ''
     }
 
-    const title = extractTag('title')
+    const title = decodeHtmlEntities(extractTag('title'))
     const link = extractTag('link') || (item.match(/<link>\s*(https?:\/\/[^\s<]+)\s*/i)?.[1] ?? '')
     const pubDateStr = extractTag('pubDate')
     const description = extractTag('description')
@@ -89,7 +102,7 @@ function parseRSSItems(xml: string, source: RSSSource): NewsItem[] {
     if (!title || !link) continue
 
     const pubDate = pubDateStr ? new Date(pubDateStr).toISOString() : new Date().toISOString()
-    const summary = description.replace(/<[^>]+>/g, '').slice(0, 200)
+    const summary = decodeHtmlEntities(description.replace(/<[^>]+>/g, '').slice(0, 200))
 
     const id = Buffer.from(`${title.slice(0, 50)}_${source.key}`).toString('base64').slice(0, 16)
 

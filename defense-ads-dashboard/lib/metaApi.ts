@@ -47,7 +47,7 @@ export async function fetchAdsByKeyword(
         console.log(`[MetaAPI] page=${page} keyword="${keyword}" URL: ${META_API_URL}?${safeParams.toString()}`)
       }
 
-      const response = await fetch(fullUrl)
+      const response = await fetch(fullUrl, { signal: AbortSignal.timeout(8000) })
 
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}))
