@@ -27,6 +27,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score')
   const [showUnscored, setShowUnscored] = useState(false)
+  const [countryFilter, setCountryFilter] = useState<string>('ALL')
 
   const getCacheKey = useCallback((kws: string[]) => {
     return `ads_cache_${[...kws].sort().join(',')}`
@@ -121,7 +122,15 @@ function DashboardContent() {
     fetchAds(newKeywords)
   }
 
-  const sortedScoredAds = [...scoredAds].sort((a, b) => {
+  const filteredScoredAds = countryFilter === 'ALL'
+    ? scoredAds
+    : scoredAds.filter((ad) => ad.detectedCountry === countryFilter)
+
+  const filteredUnscoredAds = countryFilter === 'ALL'
+    ? unscoredAds
+    : unscoredAds.filter((ad) => ad.detectedCountry === countryFilter)
+
+  const sortedScoredAds = [...filteredScoredAds].sort((a, b) => {
     if (sortBy === 'score') {
       return (b.score ?? 0) - (a.score ?? 0)
     }
@@ -208,6 +217,29 @@ function DashboardContent() {
           </div>
         ) : (
           <>
+            {/* Country filter */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {[
+                { code: 'ALL', label: '전체' },
+                { code: 'KR', label: '🇰🇷 한국' },
+                { code: 'JP', label: '🇯🇵 일본' },
+                { code: 'TW', label: '🇹🇼 대만' },
+                { code: 'US', label: '🇺🇸 영어권' },
+              ].map(({ code, label }) => (
+                <button
+                  key={code}
+                  onClick={() => setCountryFilter(code)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    countryFilter === code
+                      ? 'bg-accent-blue text-white ring-2 ring-accent-blue/50'
+                      : 'bg-bg-card text-gray-400 hover:text-white border border-gray-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             {/* Sort toggle */}
             <div className="flex gap-2 mb-6">
               <button
@@ -256,7 +288,7 @@ function DashboardContent() {
             </section>
 
             {/* Unscored Ads */}
-            {unscoredAds.length > 0 && (
+            {filteredUnscoredAds.length > 0 && (
               <section>
                 <button
                   onClick={() => setShowUnscored(!showUnscored)}
@@ -271,12 +303,12 @@ function DashboardContent() {
                     노출 미집계 광고
                   </span>
                   <span className="text-sm font-normal">
-                    ({unscoredAds.length}개)
+                    ({filteredUnscoredAds.length}개)
                   </span>
                 </button>
                 {showUnscored && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {unscoredAds.map((ad) => (
+                    {filteredUnscoredAds.map((ad) => (
                       <AdCard
                         key={ad.id}
                         ad={ad as MetaAd & { score: number }}

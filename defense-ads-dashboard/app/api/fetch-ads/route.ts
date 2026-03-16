@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchAdsByKeyword } from '@/lib/metaApi'
 import { calculateScore } from '@/lib/scorer'
+import { detectCountry } from '@/lib/languageDetector'
 import { MetaAd } from '@/types/ad'
 
 export async function GET(request: NextRequest) {
@@ -40,11 +41,11 @@ export async function GET(request: NextRequest) {
     const unscoredAds: MetaAd[] = []
 
     for (const ad of allAds) {
+      ad.score = calculateScore(ad)
+      ad.detectedCountry = detectCountry(ad)
       if (ad.hasImpressionData) {
-        ad.score = calculateScore(ad)
         scoredAds.push(ad)
       } else {
-        ad.score = calculateScore(ad)
         unscoredAds.push(ad)
       }
     }
