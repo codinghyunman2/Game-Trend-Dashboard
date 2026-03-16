@@ -19,16 +19,23 @@ export default function NewsListItem({ item }: { item: NewsItem }) {
   const [showOriginal, setShowOriginal] = useState(false)
 
   return (
-    <div className="p-4 rounded-xl bg-[#1a1a2e] border border-gray-800 hover:border-gray-600 transition-colors">
+    <div
+      className="p-4 rounded-xl transition-colors"
+      style={{
+        background: 'var(--color-card)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--card-shadow)',
+      }}
+    >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-white font-semibold text-sm leading-snug flex-1 mr-3">
+        <h3 className="text-sm font-semibold leading-snug flex-1 mr-3" style={{ color: 'var(--color-text-primary)' }}>
           {item.titleKo || item.title}
         </h3>
-        <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">
+        <span className="text-xs whitespace-nowrap shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
           {timeAgo(item.pubDate)}
         </span>
       </div>
-      <p className="text-gray-400 text-xs leading-relaxed mb-2 line-clamp-2">
+      <p className="text-xs leading-relaxed mb-2 line-clamp-2" style={{ color: 'var(--color-text-secondary)' }}>
         {item.summaryKo || item.summary}
       </p>
 
@@ -36,26 +43,34 @@ export default function NewsListItem({ item }: { item: NewsItem }) {
         <>
           <button
             onClick={() => setShowOriginal(!showOriginal)}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors mb-2"
+            className="text-xs transition-colors mb-2"
+            style={{ color: 'var(--color-text-secondary)' }}
           >
             {showOriginal ? '번역본 보기' : '원문 보기'}
           </button>
           {showOriginal && (
-            <div className="mt-2 p-3 rounded-lg bg-gray-900/50 border border-gray-800">
-              <p className="text-xs text-gray-300 font-medium mb-1">{item.title}</p>
-              <p className="text-xs text-gray-500">{item.summary}</p>
+            <div
+              className="mt-2 p-3 rounded-lg"
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>{item.title}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{item.summary}</p>
             </div>
           )}
         </>
       )}
 
       <div className="flex items-center justify-between mt-2">
-        <span className="text-xs text-gray-500">{item.source}</span>
+        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{item.source}</span>
         <a
           href={item.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-accent-purple hover:text-purple-300 transition-colors font-medium"
+          className="inline-flex items-center gap-1 text-xs font-medium transition-colors hover:underline"
+          style={{ color: 'var(--color-accent)' }}
         >
           원문 →
         </a>

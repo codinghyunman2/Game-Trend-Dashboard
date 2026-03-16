@@ -36,13 +36,19 @@ export default function KeywordManager({ keywords, onChange }: KeywordManagerPro
         {keywords.map((keyword) => (
           <span
             key={keyword}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-purple/20 border border-accent-purple/40 text-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm"
+            style={{
+              background: 'var(--color-accent-soft)',
+              border: '1px solid var(--color-accent)',
+              color: 'var(--color-text-primary)',
+            }}
           >
             {keyword}
             <button
               onClick={() => removeKeyword(keyword)}
               disabled={keywords.length <= 1}
-              className="ml-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="ml-1 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              style={{ color: 'var(--color-text-secondary)' }}
               aria-label={`${keyword} 삭제`}
             >
               &times;
@@ -57,12 +63,20 @@ export default function KeywordManager({ keywords, onChange }: KeywordManagerPro
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="키워드 입력..."
-          className="px-3 py-1.5 rounded-lg bg-bg-card border border-gray-700 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent-purple transition-colors"
+          className="px-3 py-1.5 rounded-lg text-sm focus:outline-none transition-colors"
+          style={{
+            background: 'var(--color-card)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-primary)',
+          }}
         />
         <button
           onClick={addKeyword}
           disabled={!input.trim()}
-          className="px-4 py-1.5 rounded-lg bg-accent-purple hover:bg-accent-purple/80 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          style={{ background: 'var(--color-accent)' }}
+          onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.background = 'var(--color-accent-hover)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-accent)' }}
         >
           추가
         </button>

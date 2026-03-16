@@ -55,21 +55,27 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-white mb-4">📊 소재 인사이트</h2>
+      <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>소재 인사이트</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
-          <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🔥 가장 많은 소재 집행</p>
+        <div
+          className="rounded-xl p-4"
+          style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+        >
+          <p className="text-xs mb-3 uppercase tracking-wide" style={{ color: 'var(--color-text-secondary)' }}>가장 많은 소재 집행</p>
           {top3Games.length === 0 ? (
-            <p className="text-gray-500 text-sm">데이터 없음</p>
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>데이터 없음</p>
           ) : (
             <ol className="flex flex-col gap-2">
               {top3Games.map(([name, count], i) => (
                 <li key={name} className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-gray-300 truncate">
-                    <span className="text-accent-purple font-bold mr-1">{i + 1}.</span>
+                  <span className="text-sm truncate" style={{ color: 'var(--color-text-primary)' }}>
+                    <span className="font-bold mr-1" style={{ color: 'var(--color-accent)' }}>{i + 1}.</span>
                     {name}
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-accent-purple/20 text-accent-purple whitespace-nowrap">
+                  <span
+                    className="text-xs px-2 py-0.5 rounded whitespace-nowrap"
+                    style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+                  >
                     {count}개
                   </span>
                 </li>
@@ -78,17 +84,23 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
           )}
         </div>
 
-        <div className="rounded-xl bg-bg-card border border-gray-800 p-4 flex flex-col justify-center">
-          <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">⚡ 이번 주 신규 소재</p>
-          <p className="text-3xl font-bold text-white">
+        <div
+          className="rounded-xl p-4 flex flex-col justify-center"
+          style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+        >
+          <p className="text-xs mb-2 uppercase tracking-wide" style={{ color: 'var(--color-text-secondary)' }}>이번 주 신규 소재</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
             {recentCount}
-            <span className="text-base font-normal text-gray-400 ml-1">개</span>
+            <span className="text-base font-normal ml-1" style={{ color: 'var(--color-text-secondary)' }}>개</span>
           </p>
-          <p className="text-xs text-gray-500 mt-1">최근 7일 내 신규 집행 감지</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>최근 7일 내 신규 집행 감지</p>
         </div>
 
-        <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
-          <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🌍 국가별 광고 분포</p>
+        <div
+          className="rounded-xl p-4"
+          style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+        >
+          <p className="text-xs mb-3 uppercase tracking-wide" style={{ color: 'var(--color-text-secondary)' }}>국가별 광고 분포</p>
           <div className="flex flex-col gap-1.5">
             {[
               { code: 'KR', label: '🇰🇷 KR' },
@@ -98,8 +110,8 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
               { code: 'OTHER', label: '🌐 기타' },
             ].map(({ code, label }) => (
               <div key={code} className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">{label}</span>
-                <span className="text-white font-semibold">{countryCount[code]}</span>
+                <span style={{ color: 'var(--color-text-secondary)' }}>{label}</span>
+                <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{countryCount[code]}</span>
               </div>
             ))}
           </div>
@@ -116,8 +128,11 @@ function CountryAdGrid({ ads, countryCode }: { ads: MetaAd[]; countryCode: strin
 
   if (filtered.length === 0) {
     return (
-      <div className="rounded-xl bg-bg-card border border-gray-800 p-8 text-center">
-        <p className="text-gray-400">해당 국가 광고가 없습니다.</p>
+      <div
+        className="rounded-xl p-8 text-center"
+        style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+      >
+        <p style={{ color: 'var(--color-text-secondary)' }}>해당 국가 광고가 없습니다.</p>
       </div>
     )
   }
@@ -256,18 +271,24 @@ function DashboardContent() {
 
   if (error === 'META_ACCESS_TOKEN_NOT_SET') {
     return (
-      <div className="min-h-screen bg-bg-base flex items-center justify-center p-4">
-        <div className="max-w-lg w-full rounded-xl bg-bg-card border border-gray-800 p-8">
-          <h2 className="text-xl font-bold text-white mb-4">Meta API 토큰 설정 필요</h2>
-          <p className="text-gray-300 mb-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--color-bg)' }}>
+        <div
+          className="max-w-lg w-full rounded-xl p-8"
+          style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+        >
+          <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>Meta API 토큰 설정 필요</h2>
+          <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
             광고 데이터를 가져오려면 Meta Graph API 액세스 토큰이 필요합니다.
           </p>
-          <div className="bg-gray-900 rounded-lg p-4 text-sm font-mono text-gray-300">
-            <p className="text-gray-500 mb-2"># .env.local 파일에 추가:</p>
-            <p>META_ACCESS_TOKEN=여기에_토큰_입력</p>
+          <div
+            className="rounded-lg p-4 text-sm font-mono"
+            style={{ background: 'var(--color-surface)', color: 'var(--color-text-secondary)' }}
+          >
+            <p className="mb-2" style={{ color: 'var(--color-text-secondary)' }}># .env.local 파일에 추가:</p>
+            <p style={{ color: 'var(--color-text-primary)' }}>META_ACCESS_TOKEN=여기에_토큰_입력</p>
           </div>
-          <div className="mt-4 text-sm text-gray-400 space-y-1">
-            <p>1. <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-accent-purple hover:underline">Meta for Developers</a>에서 앱을 생성하세요.</p>
+          <div className="mt-4 text-sm space-y-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <p>1. <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--color-accent)' }}>Meta for Developers</a>에서 앱을 생성하세요.</p>
             <p>2. Marketing API 권한을 추가하세요.</p>
             <p>3. 액세스 토큰을 발급받아 .env.local에 저장하세요.</p>
             <p>4. 서버를 재시작하세요.</p>
@@ -278,31 +299,40 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-base">
+    <div className="min-h-screen" style={{ background: 'var(--color-bg)' }}>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
         <header className="mb-8">
+          <div className="mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--color-accent)' }}>2026 게임 트렌드 for 로켓단게임즈</h1>
+          </div>
           <div className="flex justify-end">
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => fetchAds(keywords, false)}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-bg-card border border-gray-700 text-sm text-gray-300 hover:text-white hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-secondary)',
+                  }}
                 >
                   새로고침
                 </button>
                 <button
                   onClick={() => fetchAds(keywords, true)}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-bg-card border border-accent-purple/50 text-sm text-accent-purple hover:text-white hover:border-accent-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                  style={{ background: 'var(--color-accent)' }}
                 >
                   최신 데이터
                 </button>
               </div>
               {lastUpdated && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                   마지막 업데이트: {formatLastUpdated(lastUpdated)}
                 </p>
               )}
@@ -316,16 +346,22 @@ function DashboardContent() {
         </section>
 
         {/* 한국 광고 보기 */}
-        <section className="mb-8 rounded-xl bg-bg-card border border-gray-700 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <section
+          className="mb-8 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+          style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+        >
           <a
             href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&content_languages[0]=ko&country=KR&is_targeted_country=false&media_type=all&q=%EB%94%94%ED%8E%9C%EC%8A%A4&search_type=keyword_unordered&sort_data[mode]=relevancy_monthly_grouped&sort_data[direction]=desc"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent-purple hover:bg-purple-600 text-white font-medium text-sm transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-medium text-sm transition-colors whitespace-nowrap"
+            style={{ background: 'var(--color-accent)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-accent-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-accent)')}
           >
             한국 광고 보기
           </a>
-          <p className="text-gray-400 text-sm">
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             Meta 광고 라이브러리에서 한국 타겟 디펜스 게임 광고를 확인하세요
           </p>
         </section>
@@ -333,28 +369,37 @@ function DashboardContent() {
         {isLoading ? (
           <LoadingSpinner />
         ) : error ? (
-          <div className="rounded-xl bg-bg-card border border-red-900/40 p-8 text-center">
+          <div
+            className="rounded-xl p-8 text-center"
+            style={{ background: 'var(--color-card)', border: '1px solid rgba(239,68,68,0.3)', boxShadow: 'var(--card-shadow)' }}
+          >
             <p className="text-red-400 text-lg mb-2">오류 발생</p>
-            <p className="text-gray-400">{error}</p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>{error}</p>
           </div>
         ) : ads.length === 0 ? (
-          <div className="rounded-xl bg-bg-card border border-gray-800 p-8 text-center">
-            <p className="text-gray-400 text-lg mb-2">검색 결과 없음</p>
-            <p className="text-gray-500">다른 키워드로 검색해보세요.</p>
+          <div
+            className="rounded-xl p-8 text-center"
+            style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: 'var(--card-shadow)' }}
+          >
+            <p className="text-lg mb-2" style={{ color: 'var(--color-text-secondary)' }}>검색 결과 없음</p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>다른 키워드로 검색해보세요.</p>
           </div>
         ) : (
           <>
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 border-b border-gray-800 overflow-x-auto scrollbar-hide">
+            <div
+              className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide"
+              style={{ borderBottom: '1px solid var(--color-border)' }}
+            >
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 whitespace-nowrap min-h-[44px] ${
-                    activeTab === tab.id
-                      ? 'text-white border-accent-purple'
-                      : 'text-gray-400 border-transparent hover:text-gray-200'
-                  }`}
+                  className="px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 whitespace-nowrap min-h-[44px]"
+                  style={{
+                    color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                    borderBottomColor: activeTab === tab.id ? 'var(--color-accent)' : 'transparent',
+                  }}
                 >
                   {tab.label}
                 </button>
@@ -366,7 +411,7 @@ function DashboardContent() {
               <>
                 <InsightSection allAds={ads} />
                 <section className="mb-8">
-                  <h2 className="text-lg font-semibold text-white mb-4">⚡ AI 분석 Top 3</h2>
+                  <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>AI 분석 Top 3</h2>
                   <Top3Banner analyses={analyses} isLoading={isAnalyzing} />
                 </section>
               </>

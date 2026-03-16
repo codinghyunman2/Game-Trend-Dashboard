@@ -17,7 +17,7 @@ function getCopyBadge(count: number): { label: string; color: string } | null {
 function getScoreColor(score: number): string {
   if (score >= 80) return '#22c55e'
   if (score >= 60) return '#eab308'
-  return '#ef4444'
+  return '#e5384f'
 }
 
 function formatImpressions(lower: string, upper: string): string {
@@ -55,7 +55,14 @@ export default function AdCard({ ad }: AdCardProps) {
   const copyBadge = getCopyBadge(ad.copyCount ?? 0)
 
   return (
-    <div className="rounded-xl bg-bg-card border border-gray-800 p-5 flex flex-col gap-4 hover:border-accent-purple/40 transition-colors">
+    <div
+      className="rounded-xl p-5 flex flex-col gap-4 transition-colors"
+      style={{
+        background: 'var(--color-card)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--card-shadow)',
+      }}
+    >
       {/* Copy badge */}
       {copyBadge && (
         <div className="flex">
@@ -73,7 +80,7 @@ export default function AdCard({ ad }: AdCardProps) {
               cy="40"
               r="36"
               fill="none"
-              stroke="#374151"
+              stroke="var(--color-border)"
               strokeWidth="6"
             />
             <circle
@@ -95,19 +102,22 @@ export default function AdCard({ ad }: AdCardProps) {
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-white leading-snug line-clamp-2">
+          <h3 className="text-base font-semibold leading-snug line-clamp-2" style={{ color: 'var(--color-text-primary)' }}>
             {title}
           </h3>
           {ad.page_name && (
-            <p className="text-sm text-gray-400 mt-1 truncate">{ad.page_name}</p>
+            <p className="text-sm mt-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>{ad.page_name}</p>
           )}
         </div>
       </div>
 
       {/* Impressions & Date */}
-      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+      <div className="flex flex-wrap items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
         {ad.impressions && (
-          <span className="px-2 py-1 rounded bg-accent-blue/10 text-accent-blue">
+          <span
+            className="px-2 py-1 rounded"
+            style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+          >
             {formatImpressions(ad.impressions.lower_bound, ad.impressions.upper_bound)}
           </span>
         )}
@@ -132,12 +142,13 @@ export default function AdCard({ ad }: AdCardProps) {
 
       {/* Body text */}
       {body && (
-        <div className="text-sm text-gray-300 leading-relaxed">
+        <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
           <p>{expanded ? body : truncatedBody}</p>
           {body.length > 120 && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="mt-1 text-accent-purple text-xs hover:underline"
+              className="mt-1 text-xs hover:underline"
+              style={{ color: 'var(--color-accent)' }}
             >
               {expanded ? '접기' : '더 보기'}
             </button>
@@ -151,7 +162,8 @@ export default function AdCard({ ad }: AdCardProps) {
           href={ad.ad_snapshot_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-accent-purple hover:text-accent-blue transition-colors mt-auto"
+          className="inline-flex items-center gap-1 text-sm transition-colors mt-auto hover:underline"
+          style={{ color: 'var(--color-accent)' }}
         >
           광고 보기 &rarr;
         </a>

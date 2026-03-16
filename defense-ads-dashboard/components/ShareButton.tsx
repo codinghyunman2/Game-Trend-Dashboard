@@ -18,7 +18,14 @@ export default function ShareButton() {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-purple/20 hover:bg-accent-purple/30 border border-accent-purple/40 text-sm font-medium transition-all duration-200"
+      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+      style={{
+        background: 'transparent',
+        border: '1px solid var(--color-border)',
+        color: 'var(--color-text-secondary)',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.75')}
+      onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
     >
       {copied ? '복사됨!' : '링크 복사'}
     </button>

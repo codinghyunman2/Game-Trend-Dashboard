@@ -13,19 +13,23 @@ export default function ChannelTabs({
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {channels.map((key) => (
-        <button
-          key={key}
-          onClick={() => onSelect(key)}
-          className={`px-3 py-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors min-h-[44px] ${
-            selected === key
-              ? 'bg-accent-purple/20 text-purple-300 border border-accent-purple/40'
-              : 'bg-[#1a1a2e] text-gray-400 border border-gray-800 hover:text-gray-200 hover:border-gray-600'
-          }`}
-        >
-          {channelNames[key] || key}
-        </button>
-      ))}
+      {channels.map((key) => {
+        const isSelected = selected === key
+        return (
+          <button
+            key={key}
+            onClick={() => onSelect(key)}
+            className="px-3 py-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors min-h-[44px]"
+            style={{
+              background: isSelected ? 'var(--color-accent-soft)' : 'var(--color-card)',
+              border: isSelected ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+              color: isSelected ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            }}
+          >
+            {channelNames[key] || key}
+          </button>
+        )
+      })}
     </div>
   )
 }

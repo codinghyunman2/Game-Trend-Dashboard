@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import ShareButton from './ShareButton'
+import ThemeToggle from './ThemeToggle'
 
 export default function NavBar() {
   const pathname = usePathname()
@@ -13,7 +14,13 @@ export default function NavBar() {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-gray-800" style={{ backgroundColor: '#0f0f1a' }}>
+    <nav
+      className="sticky top-0 z-50"
+      style={{
+        backgroundColor: 'var(--color-surface)',
+        borderBottom: '1px solid var(--color-border)',
+      }}
+    >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-6">
@@ -26,11 +33,11 @@ export default function NavBar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3 py-3 rounded-lg text-sm font-medium transition-colors min-h-[44px] inline-flex items-center ${
-                      isActive
-                        ? 'bg-accent-purple/20 text-purple-300 border border-accent-purple/40'
-                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
-                    }`}
+                    className="px-3 py-3 text-sm font-medium transition-colors min-h-[44px] inline-flex items-center"
+                    style={{
+                      color: isActive ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                      borderBottom: isActive ? '2px solid var(--color-accent)' : '2px solid transparent',
+                    }}
                   >
                     {link.label}
                   </Link>
@@ -38,7 +45,10 @@ export default function NavBar() {
               })}
             </div>
           </div>
-          <ShareButton />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <ShareButton />
+          </div>
         </div>
       </div>
     </nav>

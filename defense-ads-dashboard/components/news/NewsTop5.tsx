@@ -31,7 +31,14 @@ function RankBadge({ rank }: { rank: number }) {
 
 function SkeletonItem() {
   return (
-    <div className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a2e] border border-gray-800 animate-pulse">
+    <div
+      className="flex items-start gap-4 p-4 rounded-xl animate-pulse"
+      style={{
+        background: 'var(--color-card)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--card-shadow)',
+      }}
+    >
       <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0" />
       <div className="flex-1 space-y-2">
         <div className="h-4 bg-gray-700 rounded w-3/4" />
@@ -61,8 +68,15 @@ export default function NewsTop5({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl bg-[#1a1a2e] border border-gray-800 p-8 text-center">
-        <p className="text-gray-400">AI 분석 결과가 없습니다.</p>
+      <div
+        className="rounded-xl p-8 text-center"
+        style={{
+          background: 'var(--color-card)',
+          border: '1px solid var(--color-border)',
+          boxShadow: 'var(--card-shadow)',
+        }}
+      >
+        <p style={{ color: 'var(--color-text-secondary)' }}>AI 분석 결과가 없습니다.</p>
       </div>
     )
   }
@@ -72,24 +86,30 @@ export default function NewsTop5({
       {items.map((item) => (
         <div
           key={item.rank}
-          className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a2e] border border-gray-800 hover:border-gray-600 transition-colors"
+          className="flex items-start gap-4 p-4 rounded-xl transition-colors"
+          style={{
+            background: 'var(--color-card)',
+            border: '1px solid var(--color-border)',
+            boxShadow: 'var(--card-shadow)',
+          }}
         >
           <RankBadge rank={item.rank} />
           <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold text-sm leading-snug mb-1">
+            <h3 className="text-sm font-semibold leading-snug mb-1" style={{ color: 'var(--color-text-primary)' }}>
               {item.titleKo}
             </h3>
-            <p className="text-gray-400 text-xs leading-relaxed mb-2 line-clamp-1">
+            <p className="text-xs leading-relaxed mb-2 line-clamp-1" style={{ color: 'var(--color-text-secondary)' }}>
               {item.summaryKo}
             </p>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               <span>{item.source}</span>
               <span>{timeAgo(item.pubDate)}</span>
               <a
                 href={item.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-accent-purple hover:text-purple-300 transition-colors"
+                className="transition-colors hover:underline"
+                style={{ color: 'var(--color-accent)' }}
               >
                 원문보기 →
               </a>

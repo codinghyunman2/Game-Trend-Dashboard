@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body style={{ backgroundColor: '#0f0f1a', color: '#e2e8f0' }}>
+      <body>
         <NavBar />
         {children}
       </body>
