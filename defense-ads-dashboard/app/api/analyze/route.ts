@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MetaAd, AdAnalysis } from '@/types/ad'
+import fs from 'fs'
+import path from 'path'
+import crypto from 'crypto'
 
 const MAX_BODY_SIZE = 100 * 1024 // 100KB
 const MAX_ADS = 10
+const CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
 
 // Simple in-memory rate limiter (resets on server restart)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -20,6 +24,13 @@ function checkRateLimit(ip: string): boolean {
   if (entry.count >= RATE_LIMIT_MAX) return false
   entry.count++
   return true
+}
+
+function getCacheFilePath(adIds: string[]): string {
+  const hash = crypto.createHash('md5').update([...adIds].sort().join(',')).digest('hex').slice(0, 12)
+  const cacheDir = path.join(process.cwd(), 'cache')
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
+  return path.join(cacheDir, `ads_analysis_${hash}.json`)
 }
 
 export async function POST(request: NextRequest) {
@@ -48,6 +59,8 @@ export async function POST(request: NextRequest) {
       { status: 413 }
     )
   }
+
+  const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
 
   try {
     let body: unknown
@@ -83,7 +96,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const adsData = (ads as MetaAd[]).slice(0, 5).map((ad, i) => ({
+    const topAds = (ads as MetaAd[]).slice(0, 5)
+    const adIds = topAds.map((ad) => ad.id)
+    const cacheFile = getCacheFilePath(adIds)
+
+    if (!forceRefresh) {
+      try {
+        if (fs.existsSync(cacheFile)) {
+          const raw = fs.readFileSync(cacheFile, 'utf-8')
+          const cached = JSON.parse(raw)
+          if (Date.now() - new Date(cached.cachedAt).getTime() < CACHE_TTL) {
+            return NextResponse.json(cached.analyses)
+          }
+        }
+      } catch {
+        // cache miss, proceed
+      }
+    }
+
+    const adsData = topAds.map((ad, i) => ({
       index: i + 1,
       title: String(ad.ad_creative_link_titles?.[0] ?? ''),
       body: String(ad.ad_creative_bodies?.[0] ?? ''),
@@ -146,6 +177,12 @@ ${JSON.stringify(adsData, null, 2)}
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
         { status: 500 }
       )
+    }
+
+    try {
+      fs.writeFileSync(cacheFile, JSON.stringify({ analyses, cachedAt: new Date().toISOString() }), 'utf-8')
+    } catch {
+      // cache write failure is non-critical
     }
 
     return NextResponse.json(analyses)

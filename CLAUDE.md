@@ -1,9 +1,18 @@
 # CLAUDE.md — Defense Ads Dashboard
 
 ## 프로젝트 개요
-- **목적**: Meta Ad Library API로 디펜스 장르 모바일 게임 광고를 수집·분석·시각화
+- **목적**: 게임 업계 뉴스 허브 + Meta Ad Library API 디펜스 장르 광고 분석
 - **주요 사용자**: 모바일 게임 마케터 팀 (팀원 간 URL 공유 용도)
 - **스택**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
+
+---
+
+## 서비스 구조
+
+| 경로 | 페이지 | 설명 |
+|------|--------|------|
+| `/` | 뉴스 허브 | 게임 업계 RSS 뉴스 수집·번역·AI 분석 |
+| `/ads` | 광고 트렌드 | Meta Ad Library 기반 디펜스 광고 대시보드 |
 
 ---
 
@@ -11,40 +20,69 @@
 
 ```
 app/
-├── page.tsx                  # 메인 대시보드
-├── layout.tsx
+├── page.tsx                          # 뉴스 허브 메인
+├── ads/page.tsx                      # 광고 트렌드 대시보드
+├── layout.tsx                        # NavBar 포함 공통 레이아웃
 └── api/
-    ├── fetch-ads/route.ts    # Meta Ad Library API 호출 (서버 전용)
-    └── analyze/route.ts      # Claude API 분석 (서버 전용)
+    ├── fetch-ads/route.ts            # Meta Ad Library API 호출
+    ├── analyze/route.ts              # 광고 AI 분석
+    └── news/
+        ├── fetch/route.ts            # RSS 뉴스 수집 + 번역
+        └── analyze/route.ts          # 뉴스 AI Top 5 분석
 components/
-├── AdCard.tsx                # 광고 카드
-├── Top3Banner.tsx            # AI 분석 Top 3 배너
-├── KeywordManager.tsx        # 키워드 추가/삭제 UI
-└── ShareButton.tsx           # URL 클립보드 복사
+├── NavBar.tsx                        # 상단 네비게이션
+├── AdCard.tsx                        # 광고 카드
+├── Top3Banner.tsx                    # AI 분석 Top 3 배너
+├── KeywordManager.tsx                # 키워드 추가/삭제 UI
+├── ShareButton.tsx                   # URL 클립보드 복사
+├── LoadingSpinner.tsx                # 로딩 스피너
+└── news/
+    ├── NewsTop5.tsx                  # AI 분석 Top 5 뉴스
+    ├── NewsCard.tsx                  # 뉴스 카드 (카테고리 Top 3용)
+    ├── ChannelTabs.tsx               # 채널별 탭
+    └── NewsListItem.tsx              # 채널별 뉴스 리스트 아이템
 lib/
-├── metaApi.ts                # Meta API 클라이언트
-└── scorer.ts                 # 광고 점수 계산
+├── metaApi.ts                        # Meta API 클라이언트
+└── scorer.ts                         # 광고 점수 계산
 types/
-└── ad.ts                     # 공통 타입 정의
+├── ad.ts                             # 광고 타입 정의
+└── news.ts                           # 뉴스 타입 정의
 ```
 
 ---
 
 ## 외부 API 호출 (중요)
 
-이 프로젝트는 두 개의 외부 API를 호출한다.
+이 프로젝트는 외부 API를 호출한다.
 **모든 호출은 서버 라우트(`app/api/`) 안에서만 발생하며, 코드 생성 단계에서는 실제 호출하지 않는다.**
 
 | API | 호출 위치 | 용도 |
 |-----|----------|------|
 | `graph.facebook.com/v19.0/ads_archive` | `app/api/fetch-ads/route.ts` | 광고 데이터 수집 |
 | `api.anthropic.com/v1/messages` | `app/api/analyze/route.ts` | Top 3 광고 분석 |
+| RSS 피드 (16개 소스) | `app/api/news/fetch/route.ts` | 게임 뉴스 수집 |
+| `api.anthropic.com/v1/messages` | `app/api/news/fetch/route.ts` | 뉴스 번역 (배치, 채널당 최대 10개) |
+| `api.anthropic.com/v1/messages` | `app/api/news/analyze/route.ts` | 뉴스 Top 5 AI 분석 |
 
 환경변수:
 ```
 META_ACCESS_TOKEN=   # Meta Graph API 액세스 토큰
 ANTHROPIC_API_KEY=   # Claude API 키
 ```
+
+### RSS 뉴스 소스 (16개)
+- **한국 (5)**: 게임메카, 인벤, 게임포커스, IT조선 게임, ZDNet 게임
+- **해외 (11)**: Pocket Gamer, Mobile Gamer, VentureBeat Games, Game Developer, Deconstructor of Fun, GamesIndustry.biz, Sensor Tower, data.ai Blog, Mobile Gaming Blog, Apptopia, Naavik
+
+### 뉴스 번역 방식
+- 비한국어 뉴스를 Claude API로 배치 번역 (채널당 최대 10개)
+- 모델: `claude-sonnet-4-20250514`
+- 실패 시 원문 유지 (titleKo = title, summaryKo = summary)
+
+### 뉴스 카테고리 분류
+- `defense`: 디펜스, 타워디펜스, tower defense, defense, strategy
+- `mobile`: 모바일, mobile, iOS, Android, App Store, Google Play
+- `general`: 그 외 전부
 
 ---
 

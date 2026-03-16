@@ -16,5 +16,8 @@ defense-ads-dashboard/out/
 # OMC
 .omc/
 
+# File cache
+defense-ads-dashboard/cache/
+
 # OS
 .DS_Store

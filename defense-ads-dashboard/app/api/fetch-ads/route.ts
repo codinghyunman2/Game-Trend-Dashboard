@@ -3,6 +3,18 @@ import { fetchAdsByKeyword } from '@/lib/metaApi'
 import { scoreAllAds } from '@/lib/scorer'
 import { detectCountry } from '@/lib/languageDetector'
 import { MetaAd } from '@/types/ad'
+import fs from 'fs'
+import path from 'path'
+import crypto from 'crypto'
+
+const CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
+
+function getCacheFilePath(keywords: string[]): string {
+  const hash = crypto.createHash('md5').update([...keywords].sort().join(',')).digest('hex').slice(0, 8)
+  const cacheDir = path.join(process.cwd(), 'cache')
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true })
+  return path.join(cacheDir, `ads_${hash}.json`)
+}
 
 export async function GET(request: NextRequest) {
   const accessToken = process.env.META_ACCESS_TOKEN
@@ -16,6 +28,23 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const keywordsParam = searchParams.get('keywords') || '디펜스'
   const keywords = keywordsParam.split(',').map((k) => k.trim()).filter(Boolean)
+  const forceRefresh = searchParams.get('refresh') === 'true'
+
+  const cacheFile = getCacheFilePath(keywords)
+
+  if (!forceRefresh) {
+    try {
+      if (fs.existsSync(cacheFile)) {
+        const raw = fs.readFileSync(cacheFile, 'utf-8')
+        const cached = JSON.parse(raw)
+        if (Date.now() - new Date(cached.cachedAt).getTime() < CACHE_TTL) {
+          return NextResponse.json(cached)
+        }
+      }
+    } catch {
+      // cache miss, proceed
+    }
+  }
 
   try {
     // Parallel fetch for each keyword
@@ -36,7 +65,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Score and annotate all ads (O(n) via pre-computed copy count map)
+    // Score and annotate all ads
     scoreAllAds(allAds)
     for (const ad of allAds) {
       ad.detectedCountry = detectCountry(ad)
@@ -45,11 +74,21 @@ export async function GET(request: NextRequest) {
     // Sort by score descending
     allAds.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
 
-    return NextResponse.json({
+    const now = new Date().toISOString()
+    const responseData = {
       ads: allAds,
-      fetchedAt: new Date().toISOString(),
+      fetchedAt: now,
+      cachedAt: now,
       keywords,
-    })
+    }
+
+    try {
+      fs.writeFileSync(cacheFile, JSON.stringify(responseData), 'utf-8')
+    } catch {
+      // cache write failure is non-critical
+    }
+
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error('Error in fetch-ads route:', error)
     return NextResponse.json(

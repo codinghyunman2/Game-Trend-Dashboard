@@ -34,6 +34,7 @@ export interface AdAnalysis {
 export interface FetchAdsResponse {
   ads: MetaAd[]
   fetchedAt: string
+  cachedAt: string
   keywords: string[]
 }
 

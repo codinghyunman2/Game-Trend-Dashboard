@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import NavBar from '@/components/NavBar'
 
 export const metadata: Metadata = {
-  title: '디펜스 광고 대시보드',
-  description: '디펜스 장르 모바일 게임 광고 수집·분석 도구',
+  title: '2026 게임 트렌드',
+  description: '게임 업계 뉴스 허브 & 디펜스 장르 광고 트렌드 분석',
 }
 
 export default function RootLayout({
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body style={{ backgroundColor: '#0f0f1a', color: '#e2e8f0' }}>
+        <NavBar />
         {children}
       </body>
     </html>
