@@ -1,6 +1,13 @@
 import { MetaAd } from '@/types/ad'
 
-export function calculateScore(ad: MetaAd): number {
+export function getCopyCount(ad: MetaAd, allAds: MetaAd[]): number {
+  const body = ad.ad_creative_bodies?.[0]
+  return allAds.filter(
+    (a) => a.page_name === ad.page_name && a.ad_creative_bodies?.[0] === body
+  ).length
+}
+
+export function calculateScore(ad: MetaAd, allAds: MetaAd[]): number {
   let score = 0
 
   // 1. 최신성 (50점)
@@ -33,6 +40,12 @@ export function calculateScore(ad: MetaAd): number {
   if (ad.ad_creative_link_titles?.[0]) score += 7
   if (ad.ad_creative_bodies?.[0]) score += 7
   if (ad.ad_creative_link_descriptions?.[0]) score += 6
+
+  // 4. 동일 카피 집행 수 (20점)
+  const copyCount = getCopyCount(ad, allAds)
+  if (copyCount >= 5) score += 20
+  else if (copyCount >= 3) score += 10
+  else if (copyCount >= 2) score += 5
 
   return score
 }

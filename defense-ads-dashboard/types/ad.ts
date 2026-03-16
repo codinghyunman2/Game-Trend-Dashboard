@@ -16,6 +16,7 @@ export interface MetaAd {
   impressions?: MetaAdImpression
   hasImpressionData: boolean
   score?: number
+  copyCount?: number
   detectedCountry?: string
 }
 

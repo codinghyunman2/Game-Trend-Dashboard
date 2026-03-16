@@ -7,6 +7,13 @@ interface AdCardProps {
   ad: MetaAd & { score: number }
 }
 
+function getCopyBadge(count: number): { label: string; color: string } | null {
+  if (count < 2) return null
+  if (count >= 5) return { label: `🔥 ${count}개 소재 집행 중`, color: 'bg-red-600/80 text-red-100' }
+  if (count >= 3) return { label: `🔥 ${count}개 소재 집행 중`, color: 'bg-orange-600/80 text-orange-100' }
+  return { label: `🔥 ${count}개 소재 집행 중`, color: 'bg-yellow-600/80 text-yellow-100' }
+}
+
 function getScoreColor(score: number): string {
   if (score >= 80) return '#22c55e'
   if (score >= 60) return '#eab308'
@@ -45,9 +52,18 @@ export default function AdCard({ ad }: AdCardProps) {
   const title = ad.ad_creative_link_titles?.[0] || '(제목 없음)'
   const body = ad.ad_creative_bodies?.[0] || ''
   const truncatedBody = body.length > 120 ? body.slice(0, 120) + '...' : body
+  const copyBadge = getCopyBadge(ad.copyCount ?? 0)
 
   return (
     <div className="rounded-xl bg-bg-card border border-gray-800 p-5 flex flex-col gap-4 hover:border-accent-purple/40 transition-colors">
+      {/* Copy badge */}
+      {copyBadge && (
+        <div className="flex">
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${copyBadge.color}`}>
+            {copyBadge.label}
+          </span>
+        </div>
+      )}
       {/* Header: Score gauge + Title */}
       <div className="flex items-start gap-4">
         <div className="relative flex-shrink-0 w-20 h-20">

@@ -11,6 +11,92 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
+function InsightSection({ allAds }: { allAds: MetaAd[] }) {
+  // Top 3 게임 by copy count
+  const pageCount: Record<string, number> = {}
+  for (const ad of allAds) {
+    if (ad.page_name) pageCount[ad.page_name] = (pageCount[ad.page_name] ?? 0) + 1
+  }
+  const top3Games = Object.entries(pageCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+
+  // 최근 7일 신규 광고
+  const now = Date.now()
+  const recentCount = allAds.filter((ad) => {
+    if (!ad.ad_delivery_start_time) return false
+    const diff = (now - new Date(ad.ad_delivery_start_time).getTime()) / (1000 * 60 * 60 * 24)
+    return diff <= 7
+  }).length
+
+  // 국가별 분포
+  const countryCodes = ['KR', 'JP', 'TW', 'US']
+  const countryCount: Record<string, number> = { KR: 0, JP: 0, TW: 0, US: 0, OTHER: 0 }
+  for (const ad of allAds) {
+    const c = ad.detectedCountry ?? 'OTHER'
+    if (countryCodes.includes(c)) countryCount[c]++
+    else countryCount['OTHER']++
+  }
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-lg font-semibold text-white mb-4">📊 소재 인사이트</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Top 3 게임 */}
+        <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
+          <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🔥 가장 많은 소재 집행</p>
+          {top3Games.length === 0 ? (
+            <p className="text-gray-500 text-sm">데이터 없음</p>
+          ) : (
+            <ol className="flex flex-col gap-2">
+              {top3Games.map(([name, count], i) => (
+                <li key={name} className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-gray-300 truncate">
+                    <span className="text-accent-purple font-bold mr-1">{i + 1}.</span>
+                    {name}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-accent-purple/20 text-accent-purple whitespace-nowrap">
+                    {count}개
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        {/* 신규 광고 */}
+        <div className="rounded-xl bg-bg-card border border-gray-800 p-4 flex flex-col justify-center">
+          <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">⚡ 이번 주 신규 소재</p>
+          <p className="text-3xl font-bold text-white">
+            {recentCount}
+            <span className="text-base font-normal text-gray-400 ml-1">개</span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">최근 7일 내 신규 집행 감지</p>
+        </div>
+
+        {/* 국가별 분포 */}
+        <div className="rounded-xl bg-bg-card border border-gray-800 p-4">
+          <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">🌍 국가별 광고 분포</p>
+          <div className="flex flex-col gap-1.5">
+            {[
+              { code: 'KR', label: '🇰🇷 KR' },
+              { code: 'JP', label: '🇯🇵 JP' },
+              { code: 'TW', label: '🇹🇼 TW' },
+              { code: 'US', label: '🇺🇸 US' },
+              { code: 'OTHER', label: '🌐 기타' },
+            ].map(({ code, label }) => (
+              <div key={code} className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">{label}</span>
+                <span className="text-white font-semibold">{countryCount[code]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -263,6 +349,9 @@ function DashboardContent() {
                 최신순
               </button>
             </div>
+
+            {/* 소재 인사이트 */}
+            <InsightSection allAds={[...scoredAds, ...unscoredAds]} />
 
             {/* AI Analysis Top 3 */}
             <section className="mb-8">
