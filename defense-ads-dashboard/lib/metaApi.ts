@@ -30,7 +30,8 @@ export async function fetchAdsByKeyword(
         access_token: accessToken,
         search_terms: keyword,
         ad_type: 'ALL',
-        'ad_reached_countries': '["GB"]',
+        // KR/US/JP/TW to match dashboard country tabs
+        'ad_reached_countries': '["KR","US","JP","TW"]',
         fields: FIELDS,
         limit: PAGE_LIMIT.toString(),
       })
@@ -40,9 +41,11 @@ export async function fetchAdsByKeyword(
       }
 
       const fullUrl = `${META_API_URL}?${params.toString()}`
-      const safeParams = new URLSearchParams(params)
-      safeParams.set('access_token', '[REDACTED]')
-      console.log(`[MetaAPI] page=${page} keyword="${keyword}" URL: ${META_API_URL}?${safeParams.toString()}`)
+      if (process.env.NODE_ENV === 'development') {
+        const safeParams = new URLSearchParams(params)
+        safeParams.set('access_token', '[REDACTED]')
+        console.log(`[MetaAPI] page=${page} keyword="${keyword}" URL: ${META_API_URL}?${safeParams.toString()}`)
+      }
 
       const response = await fetch(fullUrl)
 
@@ -56,7 +59,9 @@ export async function fetchAdsByKeyword(
       }
 
       const data = await response.json()
-      console.log(`[MetaAPI] page=${page} keyword="${keyword}" status=${response.status} count=${data.data?.length ?? 0} hasPaging=${!!data.paging?.next}`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[MetaAPI] page=${page} keyword="${keyword}" status=${response.status} count=${data.data?.length ?? 0} hasPaging=${!!data.paging?.next}`)
+      }
 
       if (!data.data || data.data.length === 0) {
         break

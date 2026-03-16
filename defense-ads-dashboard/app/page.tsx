@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { MetaAd, AdAnalysis, FetchAdsResponse, CacheEntry } from '@/types/ad'
 import AdCard from '@/components/AdCard'
@@ -9,7 +9,7 @@ import KeywordManager from '@/components/KeywordManager'
 import ShareButton from '@/components/ShareButton'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
-const CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 type TabId = 'summary' | 'KR' | 'US' | 'JP' | 'TW'
 
@@ -126,7 +126,7 @@ function CountryAdGrid({ ads, countryCode }: { ads: MetaAd[]; countryCode: strin
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {filtered.map((ad) => (
-        <AdCard key={ad.id} ad={ad as MetaAd & { score: number }} />
+        <AdCard key={ad.id} ad={{ ...ad, score: ad.score ?? 0 }} />
       ))}
     </div>
   )
@@ -147,6 +147,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [activeTab, setActiveTab] = useState<TabId>('summary')
+  const fetchAbortRef = useRef<AbortController | null>(null)
 
   const getCacheKey = useCallback((kws: string[]) => {
     return `ads_cache_v3_${[...kws].sort().join(',')}`
@@ -173,6 +174,11 @@ function DashboardContent() {
   }, [])
 
   const fetchAds = useCallback(async (kws: string[], forceRefresh = false) => {
+    // Cancel any in-flight request before starting a new one
+    fetchAbortRef.current?.abort()
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+
     setIsLoading(true)
     setError(null)
     setAnalyses(null)
@@ -192,13 +198,15 @@ function DashboardContent() {
             return
           }
         }
-      } catch {
-        // Cache read failure is non-critical
+      } catch (e) {
+        console.warn('Cache read failed:', e)
       }
     }
 
     try {
-      const res = await fetch(`/api/fetch-ads?keywords=${encodeURIComponent(kws.join(','))}`)
+      const res = await fetch(`/api/fetch-ads?keywords=${encodeURIComponent(kws.join(','))}`, {
+        signal: controller.signal,
+      })
       const data = await res.json()
 
       if (!res.ok) {
@@ -220,13 +228,14 @@ function DashboardContent() {
       try {
         const entry: CacheEntry = { data: response, timestamp: now }
         sessionStorage.setItem(cacheKey, JSON.stringify(entry))
-      } catch {
-        // Cache write failure is non-critical
+      } catch (e) {
+        console.warn('Cache write failed:', e)
       }
 
       setIsLoading(false)
       fetchAnalysis(response.ads)
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return
       setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       setIsLoading(false)
     }
@@ -234,7 +243,8 @@ function DashboardContent() {
 
   useEffect(() => {
     fetchAds(keywords)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // intentional: run only on mount with URL params; keyword changes go through handleKeywordsChange
 
   const handleKeywordsChange = (newKeywords: string[]) => {
     setKeywords(newKeywords)

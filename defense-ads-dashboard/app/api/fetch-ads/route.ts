@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchAdsByKeyword } from '@/lib/metaApi'
-import { calculateScore, getCopyCount } from '@/lib/scorer'
+import { scoreAllAds } from '@/lib/scorer'
 import { detectCountry } from '@/lib/languageDetector'
 import { MetaAd } from '@/types/ad'
 
@@ -36,10 +36,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Score and annotate all ads
+    // Score and annotate all ads (O(n) via pre-computed copy count map)
+    scoreAllAds(allAds)
     for (const ad of allAds) {
-      ad.score = calculateScore(ad, allAds)
-      ad.copyCount = getCopyCount(ad, allAds)
       ad.detectedCountry = detectCountry(ad)
     }
 

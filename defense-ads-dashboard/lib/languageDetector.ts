@@ -2,7 +2,7 @@ import { MetaAd } from '@/types/ad'
 
 // 개별 문자에 직접 테스트 — pattern.source 재구성 우회, 서로게이트 쌍 대응
 function charRatio(text: string, pattern: RegExp): number {
-  const chars = [...text] // Unicode code point 단위로 순회
+  const chars = Array.from(text) // Unicode code point 단위로 순회
   if (chars.length === 0) return 0
   const count = chars.filter((c) => pattern.test(c)).length
   return count / chars.length
