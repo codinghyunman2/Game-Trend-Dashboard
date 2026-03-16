@@ -22,7 +22,7 @@
 ### 1. 의존성 설치
 
 ```bash
-cd defense-ads-dashboard
+cd game-trend-dashboard
 npm install
 ```
 
