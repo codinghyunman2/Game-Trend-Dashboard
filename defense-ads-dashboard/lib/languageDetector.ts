@@ -14,12 +14,10 @@ const THRESHOLD = 0.05
 const CJK_RE = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/
 
 export function detectCountry(ad: MetaAd): string {
-  const texts = [
-    ...(ad.ad_creative_bodies ?? []),
-    ...(ad.ad_creative_link_titles ?? []),
-    ...(ad.ad_creative_link_descriptions ?? []),
-  ]
-  const combined = texts.join(' ')
+  const combined =
+    ad.ad_creative_bodies?.[0] ||
+    ad.ad_creative_link_titles?.[0] ||
+    ''
 
   if (!combined.trim()) return 'OTHER'
 

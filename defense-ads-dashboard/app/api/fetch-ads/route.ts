@@ -36,27 +36,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Separate into scored and unscored
-    const scoredAds: MetaAd[] = []
-    const unscoredAds: MetaAd[] = []
-
+    // Score and annotate all ads
     for (const ad of allAds) {
       ad.score = calculateScore(ad, allAds)
       ad.copyCount = getCopyCount(ad, allAds)
       ad.detectedCountry = detectCountry(ad)
-      if (ad.hasImpressionData) {
-        scoredAds.push(ad)
-      } else {
-        unscoredAds.push(ad)
-      }
     }
 
-    // Sort scoredAds by score descending
-    scoredAds.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    // Sort by score descending
+    allAds.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
 
     return NextResponse.json({
-      scoredAds,
-      unscoredAds,
+      ads: allAds,
       fetchedAt: new Date().toISOString(),
       keywords,
     })
