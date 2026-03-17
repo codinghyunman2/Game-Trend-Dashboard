@@ -157,17 +157,6 @@ export default function NewsHub() {
     <div className="min-h-screen bg-theme-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Header */}
-        <header className="mb-8 flex justify-end">
-          <button
-            onClick={() => fetchNews(false)}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
-          >
-            새로고침
-          </button>
-        </header>
-
         {isLoading ? (
           <LoadingSpinner />
         ) : error ? (
@@ -190,7 +179,16 @@ export default function NewsHub() {
           <>
             {/* AI Top 5 */}
             <section className="mb-10">
-              <h2 className="text-lg font-semibold mb-4 text-theme-text">AI 오늘의 주요뉴스 Top 5</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-theme-text">AI 오늘의 주요뉴스 Top 5</h2>
+                <button
+                  onClick={() => fetchNews(false)}
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
+                >
+                  새로고침
+                </button>
+              </div>
               <NewsTop5 items={analyzedTop5} loading={isAnalyzing} />
             </section>
 
