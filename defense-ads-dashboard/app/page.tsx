@@ -73,10 +73,19 @@ export default function LandingPage() {
             className="text-base sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            AI가 매일 선별하는 게임 업계 핵심 뉴스, 
+            AI가 매일 선별하는 게임 업계 핵심 뉴스,
             <br />
             Meta 라이브러리 기반 실시간 크리에이티브 트렌드
           </p>
+          <Link
+            href="/dashboard"
+            prefetch={true}
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 w-full sm:w-auto"
+            style={{ background: 'var(--color-accent)', minHeight: '44px' }}
+          >
+            뉴스 보러가기
+            <span aria-hidden>→</span>
+          </Link>
         </div>
       </section>
 
