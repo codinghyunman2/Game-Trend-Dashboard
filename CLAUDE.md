@@ -11,8 +11,26 @@
 
 | 경로 | 페이지 | 설명 |
 |------|--------|------|
-| `/` | 뉴스 허브 | 게임 업계 RSS 뉴스 수집·번역·AI 분석 |
-| `/ads` | 광고 트렌드 | Meta Ad Library 기반 디펜스 광고 대시보드 |
+| `/` | 랜딩 페이지 | 서비스 소개 + 지표 |
+| `/dashboard` | 뉴스 허브 | 게임 업계 RSS 뉴스 수집·번역·AI 분석 |
+| `/dashboard/ads` | 광고 트렌드 | Meta Ad Library 기반 디펜스 광고 대시보드 |
+
+---
+
+## 페이지 라우팅 구조
+- `/` → 랜딩 페이지 (서비스 소개 + 지표)
+- `/dashboard` → 뉴스 허브 메인
+- `/dashboard/ads` → 광고 트렌드 대시보드
+
+## 퀵메뉴 구성
+- 홈 → `/`
+- 대시보드 → `/dashboard`
+- 광고 트렌드 → `/dashboard/ads`
+
+## 신규 페이지 추가 시 주의사항
+- 모든 내부 링크는 위 라우팅 구조 기준으로 작성
+- `/ads` 또는 `/` (뉴스 허브) 로 링크하지 말 것
+- 반드시 `/dashboard` 또는 `/dashboard/ads` 사용
 
 ---
 
@@ -20,8 +38,10 @@
 
 ```
 app/
-├── page.tsx                          # 뉴스 허브 메인
-├── ads/page.tsx                      # 광고 트렌드 대시보드
+├── page.tsx                          # 랜딩 페이지 (서비스 소개 + 지표)
+├── dashboard/
+│   ├── page.tsx                      # 뉴스 허브 메인
+│   └── ads/page.tsx                  # 광고 트렌드 대시보드
 ├── layout.tsx                        # NavBar 포함 공통 레이아웃
 └── api/
     ├── fetch-ads/route.ts            # Meta Ad Library API 호출

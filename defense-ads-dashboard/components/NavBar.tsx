@@ -9,8 +9,9 @@ export default function NavBar() {
   const pathname = usePathname()
 
   const links = [
-    { href: '/', label: '메인' },
-    { href: '/ads', label: '크리에이티브' },
+    { href: '/', label: '홈' },
+    { href: '/dashboard', label: '대시보드' },
+    { href: '/dashboard/ads', label: '광고 트렌드' },
   ]
 
   return (
@@ -24,6 +25,8 @@ export default function NavBar() {
               {links.map((link) => {
                 const isActive = link.href === '/'
                   ? pathname === '/'
+                  : link.href === '/dashboard'
+                  ? pathname === '/dashboard'
                   : pathname.startsWith(link.href)
                 return (
                   <Link
