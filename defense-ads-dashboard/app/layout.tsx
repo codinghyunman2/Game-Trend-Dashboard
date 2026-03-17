@@ -5,6 +5,9 @@ import NavBar from '@/components/NavBar'
 export const metadata: Metadata = {
   title: '2026 게임 트렌드',
   description: '게임 업계 뉴스 허브 & 디펜스 장르 광고 트렌드 분석',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
