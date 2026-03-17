@@ -169,13 +169,6 @@ export default function NewsHub() {
                 >
                   새로고침
                 </button>
-                <button
-                  onClick={() => fetchNews(true)}
-                  disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-white bg-theme-accent"
-                >
-                  최신 데이터
-                </button>
               </div>
               {lastUpdated && (
                 <p className="text-xs text-theme-secondary">
