@@ -10,7 +10,7 @@ export default function NavBar() {
 
   const links = [
     { href: '/', label: '홈', labelMobile: '홈' },
-    { href: '/dashboard', label: '대시보드', labelMobile: '대시보드' },
+    { href: '/dashboard', label: '뉴스', labelMobile: '뉴스' },
     { href: '/dashboard/ads', label: '광고 트렌드', labelMobile: '광고' },
   ]
 
