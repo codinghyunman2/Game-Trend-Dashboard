@@ -48,12 +48,12 @@ export default function LandingPage() {
 
       {/* 섹션 1 — 히어로 */}
       <section
-        className="min-h-screen flex items-center px-6 lg:px-20"
+        className="flex flex-col items-center justify-center text-center px-6 lg:px-20 py-20 lg:py-32"
         style={{
           background: 'radial-gradient(ellipse at 20% 50%, var(--color-accent-soft) 0%, transparent 60%)',
         }}
       >
-        <div className="max-w-3xl w-full">
+        <div className="max-w-3xl w-full mx-auto">
           <p
             className="text-xs font-bold tracking-[0.2em] uppercase mb-6"
             style={{ color: 'var(--color-accent)' }}
@@ -61,7 +61,7 @@ export default function LandingPage() {
             2026 게임 트렌드
           </p>
           <h1
-            className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight mb-6"
+            className="text-3xl sm:text-5xl lg:text-7xl font-extrabold leading-tight mb-6"
             style={{ color: 'var(--color-text-primary)' }}
           >
             글로벌 게임 산업의
@@ -71,7 +71,7 @@ export default function LandingPage() {
             <span style={{ color: 'var(--color-accent)' }}>한눈에</span>
           </h1>
           <p
-            className="text-lg sm:text-xl mb-10 max-w-2xl leading-relaxed"
+            className="text-base sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             AI가 매일 선별하는 게임 업계 핵심 뉴스, Meta 광고 라이브러리 기반 실시간 크리에이티브 트렌드
@@ -79,8 +79,8 @@ export default function LandingPage() {
           <Link
             href="/dashboard"
             prefetch={true}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90"
-            style={{ background: 'var(--color-accent)' }}
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 w-full sm:w-auto"
+            style={{ background: 'var(--color-accent)', minHeight: '44px' }}
           >
             대시보드 바로가기
             <span aria-hidden>→</span>
@@ -90,38 +90,38 @@ export default function LandingPage() {
 
       {/* 섹션 2 — 숫자 지표 */}
       <section
-        className="min-h-screen flex flex-col items-center justify-center px-6 lg:px-20"
+        className="flex flex-col items-center justify-center px-6 lg:px-20 py-16 lg:py-24"
         style={{ background: 'var(--color-accent)' }}
       >
         <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4 text-white/70">
           Intelligence
         </p>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center mb-20 max-w-2xl leading-tight">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center mb-16 max-w-2xl leading-tight">
           매일 자동으로 수집되는
           <br />
           게임 업계 인텔리전스
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-20 w-full max-w-4xl">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-20 w-full max-w-4xl">
           <div className="flex flex-col items-center text-center">
-            <p className="text-6xl sm:text-7xl font-extrabold text-white leading-none mb-3">
+            <p className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none mb-3">
               {channelCount}
             </p>
             <p className="text-white/70 font-medium">뉴스 채널</p>
           </div>
           <div className="flex flex-col items-center text-center">
-            <p className="text-6xl sm:text-7xl font-extrabold text-white leading-none mb-3">
+            <p className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none mb-3">
               {newsCount === null ? '—' : `${newsCountAnimated}+`}
             </p>
             <p className="text-white/70 font-medium">수집 뉴스</p>
           </div>
           <div className="flex flex-col items-center text-center">
-            <p className="text-6xl sm:text-7xl font-extrabold text-white leading-none mb-3">
+            <p className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none mb-3">
               {aiCount}
             </p>
             <p className="text-white/70 font-medium">AI 분석 섹션</p>
           </div>
           <div className="flex flex-col items-center text-center">
-            <p className="text-6xl sm:text-7xl font-extrabold text-white leading-none mb-3">
+            <p className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none mb-3">
               매일
             </p>
             <p className="text-white/70 font-medium">업데이트</p>
@@ -131,10 +131,10 @@ export default function LandingPage() {
 
       {/* 섹션 3 — 게임 뉴스 */}
       <section
-        className="min-h-screen flex items-center px-6 lg:px-20 py-20"
+        className="px-6 lg:px-20 py-16 lg:py-24"
         style={{ backgroundColor: 'var(--color-bg)' }}
       >
-        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* 텍스트 */}
           <div>
             <span
@@ -144,7 +144,7 @@ export default function LandingPage() {
               NEWS
             </span>
             <h2
-              className="text-4xl sm:text-5xl font-extrabold leading-tight mb-6"
+              className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-6"
               style={{ color: 'var(--color-text-primary)' }}
             >
               11개 채널,
@@ -152,7 +152,7 @@ export default function LandingPage() {
               매일 자동 수집
             </h2>
             <p
-              className="text-lg leading-relaxed mb-8"
+              className="text-sm sm:text-lg leading-relaxed mb-8"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               게임동아, GamesIndustry, VGC 등 국내외 주요 게임 언론사 11개 채널의 뉴스를 매일 자동으로 수집합니다.
@@ -165,14 +165,14 @@ export default function LandingPage() {
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     style={{ background: 'var(--color-accent)' }}
                   />
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
+                  <span className="text-sm sm:text-base" style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
           {/* 비주얼 */}
           <div
-            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[320px]"
+            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px]"
             style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
           >
             <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
@@ -199,13 +199,13 @@ export default function LandingPage() {
 
       {/* 섹션 4 — AI 분석 */}
       <section
-        className="min-h-screen flex items-center px-6 lg:px-20 py-20"
+        className="px-6 lg:px-20 py-16 lg:py-24"
         style={{ backgroundColor: 'var(--color-surface)' }}
       >
-        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* 비주얼 (좌) */}
           <div
-            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[320px] order-2 lg:order-1"
+            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px] order-2 lg:order-1"
             style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
           >
             <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
@@ -238,7 +238,7 @@ export default function LandingPage() {
               AI
             </span>
             <h2
-              className="text-4xl sm:text-5xl font-extrabold leading-tight mb-6"
+              className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-6"
               style={{ color: 'var(--color-text-primary)' }}
             >
               매일 Top 5
@@ -246,7 +246,7 @@ export default function LandingPage() {
               자동 선별
             </h2>
             <p
-              className="text-lg leading-relaxed mb-8"
+              className="text-sm sm:text-lg leading-relaxed mb-8"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               Claude AI가 수집된 뉴스 중 게임 업계 실무자에게 가장 중요한 Top 5를 매일 자동으로 선별합니다.
@@ -259,7 +259,7 @@ export default function LandingPage() {
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     style={{ background: 'var(--color-accent)' }}
                   />
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
+                  <span className="text-sm sm:text-base" style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
                 </li>
               ))}
             </ul>
@@ -269,10 +269,10 @@ export default function LandingPage() {
 
       {/* 섹션 5 — 광고 트렌드 */}
       <section
-        className="min-h-screen flex items-center px-6 lg:px-20 py-20"
+        className="px-6 lg:px-20 py-16 lg:py-24"
         style={{ backgroundColor: 'var(--color-bg)' }}
       >
-        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* 텍스트 */}
           <div>
             <span
@@ -282,7 +282,7 @@ export default function LandingPage() {
               ADS
             </span>
             <h2
-              className="text-4xl sm:text-5xl font-extrabold leading-tight mb-6"
+              className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-6"
               style={{ color: 'var(--color-text-primary)' }}
             >
               Meta 광고 라이브러리
@@ -290,7 +290,7 @@ export default function LandingPage() {
               기반 크리에이티브 트렌드
             </h2>
             <p
-              className="text-lg leading-relaxed mb-8"
+              className="text-sm sm:text-lg leading-relaxed mb-8"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               Meta 광고 라이브러리 API를 통해 디펜스 장르 모바일 게임의 광고 소재를 수집하고 분석합니다.
@@ -303,14 +303,14 @@ export default function LandingPage() {
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     style={{ background: 'var(--color-accent)' }}
                   />
-                  <span style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
+                  <span className="text-sm sm:text-base" style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
           {/* 비주얼 */}
           <div
-            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[320px]"
+            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px]"
             style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
           >
             <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
@@ -336,14 +336,14 @@ export default function LandingPage() {
 
       {/* 섹션 6 — CTA */}
       <section
-        className="min-h-[50vh] flex flex-col items-center justify-center px-6 py-20 text-center"
+        className="flex flex-col items-center justify-center px-6 py-16 lg:py-24 text-center"
         style={{
           background: 'radial-gradient(ellipse at 50% 100%, var(--color-accent-soft) 0%, transparent 60%)',
           backgroundColor: 'var(--color-surface)',
         }}
       >
         <h2
-          className="text-4xl sm:text-5xl font-extrabold mb-6"
+          className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6"
           style={{ color: 'var(--color-text-primary)' }}
         >
           지금 바로 시작하세요
@@ -351,8 +351,8 @@ export default function LandingPage() {
         <Link
           href="/dashboard"
           prefetch={true}
-          className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 mb-6"
-          style={{ background: 'var(--color-accent)' }}
+          className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 mb-6 w-full sm:w-auto"
+          style={{ background: 'var(--color-accent)', minHeight: '44px' }}
         >
           대시보드 바로가기
           <span aria-hidden>→</span>

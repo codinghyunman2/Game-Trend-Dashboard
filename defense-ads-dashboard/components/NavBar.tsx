@@ -9,9 +9,9 @@ export default function NavBar() {
   const pathname = usePathname()
 
   const links = [
-    { href: '/', label: '홈' },
-    { href: '/dashboard', label: '대시보드' },
-    { href: '/dashboard/ads', label: '광고 트렌드' },
+    { href: '/', label: '홈', labelMobile: '홈' },
+    { href: '/dashboard', label: '대시보드', labelMobile: '대시보드' },
+    { href: '/dashboard/ads', label: '광고 트렌드', labelMobile: '광고' },
   ]
 
   return (
@@ -38,7 +38,8 @@ export default function NavBar() {
                       borderBottom: isActive ? '2px solid var(--color-accent)' : '2px solid transparent',
                     }}
                   >
-                    {link.label}
+                    <span className="sm:hidden">{link.labelMobile}</span>
+                    <span className="hidden sm:inline">{link.label}</span>
                   </Link>
                 )
               })}
