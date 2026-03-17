@@ -301,9 +301,6 @@ function DashboardContent() {
 
         {/* Header */}
         <header className="mb-8">
-          <div className="mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-theme-accent">2026 게임 트렌드 for 로켓단게임즈</h1>
-          </div>
           <div className="flex justify-end">
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">

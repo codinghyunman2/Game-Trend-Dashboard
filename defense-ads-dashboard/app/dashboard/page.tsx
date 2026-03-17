@@ -160,11 +160,6 @@ export default function NewsHub() {
         {/* Header */}
         <header className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-theme-accent">
-                2026 게임 트렌드 for 로켓단게임즈
-              </h1>
-            </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
               <div className="flex gap-2">
                 <button

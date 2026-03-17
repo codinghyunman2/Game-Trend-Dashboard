@@ -11,7 +11,7 @@ export default function NavBar() {
   const links = [
     { href: '/', label: '홈', labelMobile: '홈' },
     { href: '/dashboard', label: '뉴스', labelMobile: '뉴스' },
-    { href: '/dashboard/ads', label: '광고 트렌드', labelMobile: '광고' },
+    { href: '/dashboard/ads', label: '크리에이티브', labelMobile: '크리에이티브' },
   ]
 
   return (
