@@ -5,7 +5,6 @@ import { detectCountry } from '@/lib/languageDetector'
 import { MetaAd } from '@/types/ad'
 import { getCache, setCache } from '@/lib/cache'
 
-const ADS_CACHE_KEY = 'ads_data'
 const ADS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 
 interface AdsCachePayload {
@@ -28,9 +27,10 @@ export async function GET(request: NextRequest) {
   const keywordsParam = searchParams.get('keywords') || '디펜스'
   const keywords = keywordsParam.split(',').map((k) => k.trim()).filter(Boolean)
   const forceRefresh = searchParams.get('refresh') === 'true'
+  const cacheKey = `ads_data:${[...keywords].sort().join(',')}`
 
   if (!forceRefresh) {
-    const cached = getCache<AdsCachePayload>(ADS_CACHE_KEY)
+    const cached = getCache<AdsCachePayload>(cacheKey)
     if (cached) {
       return NextResponse.json(cached)
     }
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       keywords,
     }
 
-    setCache<AdsCachePayload>(ADS_CACHE_KEY, responseData, ADS_CACHE_TTL)
+    setCache<AdsCachePayload>(cacheKey, responseData, ADS_CACHE_TTL)
 
     return NextResponse.json(responseData)
   } catch (error) {
