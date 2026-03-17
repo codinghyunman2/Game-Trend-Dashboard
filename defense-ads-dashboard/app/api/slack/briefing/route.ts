@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NewsFetchResponse } from '@/types/news'
+import { FetchAdsResponse } from '@/types/ad'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,12 +14,15 @@ function formatDate(date: Date): string {
   return `${y}년 ${m}월 ${d}일 (${day})`
 }
 
+function getBaseUrl(): string {
+  return process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000'
+}
+
 async function fetchNewsData(): Promise<NewsFetchResponse | null> {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
-    const res = await fetch(`${baseUrl}/api/news/fetch`, { cache: 'no-store' })
+    const res = await fetch(`${getBaseUrl()}/api/news/fetch`, { cache: 'no-store' })
     if (!res.ok) return null
     return await res.json()
   } catch (e) {
@@ -27,16 +31,45 @@ async function fetchNewsData(): Promise<NewsFetchResponse | null> {
   }
 }
 
-async function generateBriefing(newsData: NewsFetchResponse): Promise<string | null> {
+async function fetchAdsData(): Promise<FetchAdsResponse | null> {
+  try {
+    const res = await fetch(`${getBaseUrl()}/api/fetch-ads?keywords=디펜스`, { cache: 'no-store' })
+    if (!res.ok) return null
+    return await res.json()
+  } catch (e) {
+    console.error('[slack/briefing] 광고 데이터 가져오기 실패:', e)
+    return null
+  }
+}
+
+interface AdSummary {
+  page_name: string
+  body: string
+}
+
+async function generateBriefing(
+  newsData: NewsFetchResponse,
+  adsData: FetchAdsResponse | null,
+): Promise<string | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
 
   const top20 = newsData.allNews.slice(0, 20).map((n) => ({
     title: n.titleKo || n.title,
     summary: n.summaryKo || n.summary,
+    link: n.link,
     source: n.source,
     category: n.category,
   }))
+
+  const top5Ads: AdSummary[] = (adsData?.ads ?? []).slice(0, 5).map((ad) => ({
+    page_name: ad.page_name ?? '(알 수 없음)',
+    body: ad.ad_creative_bodies?.[0] ?? '(광고 텍스트 없음)',
+  }))
+
+  const adsSection = top5Ads.length > 0
+    ? `광고 데이터 (점수 상위 5개):\n${JSON.stringify(top5Ads, null, 2)}`
+    : '광고 데이터: 수집된 광고 없음'
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -48,51 +81,68 @@ async function generateBriefing(newsData: NewsFetchResponse): Promise<string | n
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 512,
+        max_tokens: 1000,
         messages: [{
           role: 'user',
-          content: `다음 게임 업계 뉴스에서 오늘 가장 중요한 내용을 슬랙 메시지용으로 요약해줘.
+          content: `당신은 게임 업계 전문 애널리스트입니다.
+오늘의 게임 업계 뉴스와 광고 트렌드를 바탕으로 실무자에게 유용한 데일리 브리핑을 작성해주세요.
 
-형식 (정확히 이 형식으로):
-뉴스1: [핵심 한 줄]
-뉴스2: [핵심 한 줄]
-뉴스3: [핵심 한 줄]
-광고트렌드: [디펜스 장르 광고 동향 한 줄]
-
-- 각 항목은 한 줄, 50자 이내
+작성 규칙:
+- 뉴스 3개: 구체적인 사실 기반으로 한 줄씩
+- 광고트렌드: 실제 수집된 광고 데이터 기반으로 현재 어떤 소재/메시지가 집행되고 있는지 구체적으로
+- 각 항목은 실무에 바로 활용 가능한 인사이트로
+- 뉴스 요약은 50자 이내
 - 한국어로 작성
-- 마크다운 없이 순수 텍스트만
+- 반드시 아래 JSON 형식으로만 응답 (다른 텍스트 없이)
+
+응답 형식 (JSON만):
+{
+  "news": [
+    { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" },
+    { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" },
+    { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" }
+  ],
+  "adTrend": "실제 광고 데이터 기반 소재/메시지 동향"
+}
 
 뉴스 데이터:
-${JSON.stringify(top20, null, 2)}`,
+${JSON.stringify(top20, null, 2)}
+
+${adsSection}`,
         }],
       }),
     })
 
     if (!res.ok) return null
     const data = await res.json()
-    return data.content?.[0]?.text?.trim() ?? null
+    const text = data.content?.[0]?.text?.trim() ?? null
+    // JSON 블록 마크다운 제거 (```json ... ``` 형태 대응)
+    if (text) return text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+    return null
   } catch (e) {
     console.error('[slack/briefing] Claude 브리핑 생성 실패:', e)
     return null
   }
 }
 
-function parseBriefingLines(text: string): { news: string[]; adTrend: string } {
-  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
-  const news: string[] = []
-  let adTrend = '디펜스 장르 광고 동향 집계 중'
+interface NewsItem {
+  summary: string
+  link: string
+  source: string
+}
 
-  for (const line of lines) {
-    if (line.startsWith('뉴스')) {
-      const content = line.replace(/^뉴스\d+:\s*/, '')
-      if (content) news.push(content)
-    } else if (line.startsWith('광고트렌드:')) {
-      adTrend = line.replace(/^광고트렌드:\s*/, '')
-    }
+function parseBriefingLines(text: string): { news: NewsItem[]; adTrend: string } {
+  try {
+    const parsed = JSON.parse(text)
+    const news: NewsItem[] = (parsed.news ?? []).slice(0, 3).map((n: NewsItem) => ({
+      summary: n.summary ?? '',
+      link: n.link ?? '',
+      source: n.source ?? '',
+    }))
+    return { news, adTrend: parsed.adTrend ?? '디펜스 장르 광고 동향 집계 중' }
+  } catch {
+    return { news: [], adTrend: '디펜스 장르 광고 동향 집계 중' }
   }
-
-  return { news: news.slice(0, 3), adTrend }
 }
 
 async function sendSlackMessage(briefingText: string): Promise<boolean> {
@@ -110,7 +160,9 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
     return false
   }
 
-  const newsLines = news.map((n) => `• ${n}`).join('\n')
+  const newsLines = news
+    .map((n) => n.link ? `• <${n.link}|${n.summary}> — ${n.source}` : `• ${n.summary} — ${n.source}`)
+    .join('\n')
 
   const blocks = [
     {
@@ -131,7 +183,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `🎮 *광고 트렌드*\n• ${adTrend}`,
+        text: `🎯 *광고 트렌드*\n${adTrend}`,
       },
     },
     {
@@ -172,15 +224,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 1. 뉴스 데이터 가져오기
-  const newsData = await fetchNewsData()
+  // 1. 뉴스 + 광고 데이터 병렬 가져오기
+  const [newsData, adsData] = await Promise.all([fetchNewsData(), fetchAdsData()])
+
   if (!newsData || newsData.allNews.length === 0) {
     console.log('[slack/briefing] 뉴스 데이터 없음 — 발송 스킵')
     return NextResponse.json({ success: false, message: '뉴스 데이터 없음' })
   }
 
   // 2. Claude로 브리핑 생성
-  const briefingText = await generateBriefing(newsData)
+  const briefingText = await generateBriefing(newsData, adsData)
   if (!briefingText) {
     return NextResponse.json({ success: false, message: '브리핑 생성 실패' })
   }
