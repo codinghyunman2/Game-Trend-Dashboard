@@ -83,11 +83,15 @@ types/
 | RSS 피드 (16개 소스) | `app/api/news/fetch/route.ts` | 게임 뉴스 수집 |
 | `api.anthropic.com/v1/messages` | `app/api/news/fetch/route.ts` | 뉴스 번역 (배치, 채널당 최대 10개) |
 | `api.anthropic.com/v1/messages` | `app/api/news/analyze/route.ts` | 뉴스 Top 5 AI 분석 |
+| `api.anthropic.com/v1/messages` | `app/api/slack/briefing/route.ts` | 데일리 브리핑 생성 (Haiku) |
+| Slack Incoming Webhook | `app/api/slack/briefing/route.ts` | 슬랙 브리핑 발송 |
 
 환경변수:
 ```
 META_ACCESS_TOKEN=   # Meta Graph API 액세스 토큰
 ANTHROPIC_API_KEY=   # Claude API 키
+SLACK_WEBHOOK_URL=   # Slack Incoming Webhook URL (슬랙 앱 설정에서 발급)
+CRON_SECRET=         # Vercel Cron 인증 시크릿
 ```
 
 ### RSS 뉴스 소스 (16개)
@@ -145,6 +149,30 @@ ANTHROPIC_API_KEY=   # Claude API 키
 - **언어**: 모든 UI 텍스트 한국어
 - **점수 색상**: 80+ 초록 / 60~79 노랑 / 60 미만 빨강
 - **공유**: ShareButton이 현재 URL(키워드 포함)을 클립보드 복사 → 팀원이 동일 키워드로 열림
+
+---
+
+## 슬랙 데일리 브리핑
+
+### 자동 발송 구조
+- **엔드포인트**: `GET /api/slack/briefing`
+- **스케줄**: Vercel Cron Job — `0 0 * * *` (UTC 00:00 = 한국 오전 9시)
+- **설정 파일**: `defense-ads-dashboard/vercel.json`
+
+### 처리 순서
+1. `/api/news/fetch` 뉴스 데이터 가져오기
+2. Claude Haiku (`claude-haiku-4-5-20251001`)로 브리핑 텍스트 생성 (상위 20개 뉴스 요약)
+3. Slack Block Kit 포맷으로 Webhook 발송
+
+### 수동 테스트
+```
+GET /api/slack/briefing?test=true
+```
+(인증 헤더 없이 즉시 발송)
+
+### Vercel 배포 설정
+- `SLACK_WEBHOOK_URL`: Slack 앱 > Incoming Webhooks에서 발급
+- `CRON_SECRET`: Vercel 대시보드에서 설정 → Cron 요청 인증에 사용
 
 ---
 
