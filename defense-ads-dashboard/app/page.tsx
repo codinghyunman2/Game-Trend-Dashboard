@@ -43,6 +43,7 @@ export default function LandingPage() {
         }
       })
       .catch(() => {})
+    fetch('/api/fetch-ads').catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -111,6 +112,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/dashboard"
+            prefetch={true}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-transform hover:scale-105"
             style={{ background: 'var(--color-accent)' }}
           >
@@ -178,6 +180,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/dashboard"
+            prefetch={true}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-transform hover:scale-105"
             style={{ background: 'var(--color-accent)' }}
           >
