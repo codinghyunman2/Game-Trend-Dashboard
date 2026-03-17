@@ -102,7 +102,11 @@ async function generateBriefing(
     { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" },
     { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" }
   ],
-  "adTrend": "실제 광고 데이터 기반 소재/메시지 동향"
+  "adTrends": [
+    "집행 중인 주요 소재/메시지 요약 (실제 광고 데이터 기반, 50자 이내)",
+    "광고에서 보이는 핵심 전략 또는 트렌드 (50자 이내)",
+    "실무 인사이트 또는 시사점 (50자 이내)"
+  ]
 }
 
 뉴스 데이터:
@@ -131,7 +135,7 @@ interface NewsItem {
   source: string
 }
 
-function parseBriefingLines(text: string): { news: NewsItem[]; adTrend: string } {
+function parseBriefingLines(text: string): { news: NewsItem[]; adTrends: string[] } {
   try {
     const parsed = JSON.parse(text)
     const news: NewsItem[] = (parsed.news ?? []).slice(0, 3).map((n: NewsItem) => ({
@@ -139,9 +143,12 @@ function parseBriefingLines(text: string): { news: NewsItem[]; adTrend: string }
       link: n.link ?? '',
       source: n.source ?? '',
     }))
-    return { news, adTrend: parsed.adTrend ?? '디펜스 장르 광고 동향 집계 중' }
+    const adTrends: string[] = Array.isArray(parsed.adTrends) && parsed.adTrends.length > 0
+      ? parsed.adTrends.slice(0, 3)
+      : ['디펜스 장르 광고 동향 집계 중']
+    return { news, adTrends }
   } catch {
-    return { news: [], adTrend: '디펜스 장르 광고 동향 집계 중' }
+    return { news: [], adTrends: ['디펜스 장르 광고 동향 집계 중'] }
   }
 }
 
@@ -153,7 +160,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
   }
 
   const today = formatDate(new Date())
-  const { news, adTrend } = parseBriefingLines(briefingText)
+  const { news, adTrends } = parseBriefingLines(briefingText)
 
   if (news.length === 0) {
     console.error('[slack/briefing] 파싱된 뉴스 없음')
@@ -163,6 +170,8 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
   const newsLines = news
     .map((n) => n.link ? `• <${n.link}|${n.summary}> — ${n.source}` : `• ${n.summary} — ${n.source}`)
     .join('\n')
+
+  const adTrendLines = adTrends.map((t) => `- ${t}`).join('\n')
 
   const blocks = [
     {
@@ -183,7 +192,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `🎯 *광고 트렌드*\n${adTrend}`,
+        text: `🎮 *광고 트렌드*\n${adTrendLines}`,
       },
     },
     {
