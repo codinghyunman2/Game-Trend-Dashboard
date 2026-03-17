@@ -196,7 +196,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
     })
     .join('\n')
 
-  const adTrendLines = adTrends.map((t) => `- ${escapeSlackText(t)}`).join('\n')
+  const adTrendLines = adTrends.map((t) => `• ${escapeSlackText(t)}`).join('\n')
 
   const blocks = [
     {
