@@ -121,7 +121,10 @@ ${adsSection}`,
     const data = await res.json()
     const text = data.content?.[0]?.text?.trim() ?? null
     // JSON 블록 마크다운 제거 (```json ... ``` 형태 대응)
-    if (text) return text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+    if (text) {
+      const fenceMatch = text.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/)
+      return fenceMatch ? fenceMatch[1].trim() : text
+    }
     return null
   } catch (e) {
     console.error('[slack/briefing] Claude 브리핑 생성 실패:', e)
@@ -129,20 +132,36 @@ ${adsSection}`,
   }
 }
 
-interface NewsItem {
+interface BriefingNewsItem {
   summary: string
   link: string
   source: string
 }
 
-function parseBriefingLines(text: string): { news: NewsItem[]; adTrends: string[] } {
+// Slack mrkdwn 특수문자 이스케이프 (LLM 출력 삽입 전 필수)
+function escapeSlackText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function parseBriefingLines(text: string): { news: BriefingNewsItem[]; adTrends: string[] } {
   try {
     const parsed = JSON.parse(text)
-    const news: NewsItem[] = (parsed.news ?? []).slice(0, 3).map((n: NewsItem) => ({
-      summary: n.summary ?? '',
-      link: n.link ?? '',
-      source: n.source ?? '',
-    }))
+    const news: BriefingNewsItem[] = Array.isArray(parsed.news)
+      ? parsed.news.slice(0, 3).map((n: BriefingNewsItem) => ({
+          summary: n.summary ?? '',
+          link: n.link ?? '',
+          source: n.source ?? '',
+        }))
+      : []
     const adTrends: string[] = Array.isArray(parsed.adTrends) && parsed.adTrends.length > 0
       ? parsed.adTrends.slice(0, 3)
       : ['디펜스 장르 광고 동향 집계 중']
@@ -168,10 +187,16 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
   }
 
   const newsLines = news
-    .map((n) => n.link ? `• <${n.link}|${n.summary}> — ${n.source}` : `• ${n.summary} — ${n.source}`)
+    .map((n) => {
+      const summary = escapeSlackText(n.summary)
+      const source = escapeSlackText(n.source)
+      return n.link && isValidHttpsUrl(n.link)
+        ? `• <${n.link}|${summary}> — ${source}`
+        : `• ${summary} — ${source}`
+    })
     .join('\n')
 
-  const adTrendLines = adTrends.map((t) => `- ${t}`).join('\n')
+  const adTrendLines = adTrends.map((t) => `- ${escapeSlackText(t)}`).join('\n')
 
   const blocks = [
     {
