@@ -299,20 +299,9 @@ function DashboardContent() {
     <div className="min-h-screen bg-theme-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Header */}
-        <header className="mb-8 flex justify-end">
-          <button
-            onClick={() => fetchAds(keywords, false)}
-            disabled={isLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
-          >
-            새로고침
-          </button>
-        </header>
-
         {/* Keyword Manager */}
         <section className="mb-6">
-          <KeywordManager keywords={keywords} onChange={handleKeywordsChange} />
+          <KeywordManager keywords={keywords} onChange={handleKeywordsChange} onRefresh={() => fetchAds(keywords, false)} isRefreshing={isLoading} />
         </section>
 
         {/* 한국 광고 보기 */}

@@ -5,9 +5,11 @@ import { useState } from 'react'
 interface KeywordManagerProps {
   keywords: string[]
   onChange: (keywords: string[]) => void
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
-export default function KeywordManager({ keywords, onChange }: KeywordManagerProps) {
+export default function KeywordManager({ keywords, onChange, onRefresh, isRefreshing }: KeywordManagerProps) {
   const [input, setInput] = useState('')
 
   const addKeyword = () => {
@@ -69,6 +71,15 @@ export default function KeywordManager({ keywords, onChange }: KeywordManagerPro
         >
           추가
         </button>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="px-3 py-1.5 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
+          >
+            새로고침
+          </button>
+        )}
       </div>
     </div>
   )
