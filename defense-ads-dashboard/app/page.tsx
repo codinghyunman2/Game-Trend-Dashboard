@@ -64,17 +64,18 @@ export default function LandingPage() {
             className="text-3xl sm:text-5xl lg:text-7xl font-extrabold leading-tight mb-6"
             style={{ color: 'var(--color-text-primary)' }}
           >
-            글로벌 게임 산업의
+            매일 아침 5분,
             <br />
-            뉴스와 광고 트렌드를
-            <br />
-            <span style={{ color: 'var(--color-accent)' }}>한눈에</span>
+            게임 업계를 
+            <span style={{ color: 'var(--color-accent)' }}> 한눈에</span>
           </h1>
           <p
             className="text-base sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            AI가 매일 선별하는 게임 업계 핵심 뉴스, Meta 광고 라이브러리 기반 실시간 크리에이티브 트렌드
+            AI가 매일 선별하는 게임 업계 핵심 뉴스, 
+            <br />
+            Meta 광고 라이브러리 기반 실시간 크리에이티브 트렌드
           </p>
           <Link
             href="/dashboard"
@@ -99,7 +100,7 @@ export default function LandingPage() {
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white text-center mb-16 max-w-2xl leading-tight">
           매일 자동으로 수집되는
           <br />
-          게임 업계 인텔리전스
+          게임 인텔리전스
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-20 w-full max-w-4xl">
           <div className="flex flex-col items-center text-center">
@@ -156,6 +157,7 @@ export default function LandingPage() {
               style={{ color: 'var(--color-text-secondary)' }}
             >
               게임동아, GamesIndustry, VGC 등 국내외 주요 게임 언론사 11개 채널의 뉴스를 매일 자동으로 수집합니다.
+              <br />
               최근 3일 이내 뉴스만 필터링해 항상 최신 정보를 제공합니다.
             </p>
             <ul className="space-y-3">
@@ -250,6 +252,7 @@ export default function LandingPage() {
               style={{ color: 'var(--color-text-secondary)' }}
             >
               Claude AI가 수집된 뉴스 중 게임 업계 실무자에게 가장 중요한 Top 5를 매일 자동으로 선별합니다.
+              <br />
               산업 전반의 임팩트, 주요 기업 동향, 시장 트렌드를 기준으로 분석합니다.
             </p>
             <ul className="space-y-3">
@@ -294,6 +297,7 @@ export default function LandingPage() {
               style={{ color: 'var(--color-text-secondary)' }}
             >
               Meta 광고 라이브러리 API를 통해 디펜스 장르 모바일 게임의 광고 소재를 수집하고 분석합니다.
+              <br />
               최신성과 집행 규모를 기반으로 주목할 광고를 자동으로 선별합니다.
             </p>
             <ul className="space-y-3">
