@@ -158,25 +158,14 @@ export default function NewsHub() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
-        <header className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="flex flex-col items-end gap-1 shrink-0">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => fetchNews(false)}
-                  disabled={isLoading}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
-                >
-                  새로고침
-                </button>
-              </div>
-              {lastUpdated && (
-                <p className="text-xs text-theme-secondary">
-                  마지막 업데이트: {formatLastUpdated(lastUpdated)}
-                </p>
-              )}
-            </div>
-          </div>
+        <header className="mb-8 flex justify-end">
+          <button
+            onClick={() => fetchNews(false)}
+            disabled={isLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
+          >
+            새로고침
+          </button>
         </header>
 
         {isLoading ? (
