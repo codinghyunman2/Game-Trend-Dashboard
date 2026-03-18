@@ -255,11 +255,17 @@ export async function GET(request: NextRequest) {
       ...mobileTop3.map((n) => n.id),
       ...allNews.slice(0, 10).map((n) => n.id),
     ])
-    // Group by channel
+    // Group by channel (RSS_SOURCES 순서로 초기화하여 탭 순서 고정)
     const byChannel: Record<string, NewsItem[]> = {}
+    for (const source of RSS_SOURCES) {
+      byChannel[source.key] = []
+    }
     for (const item of allNews) {
-      if (!byChannel[item.sourceKey]) byChannel[item.sourceKey] = []
       byChannel[item.sourceKey].push(item)
+    }
+    // 뉴스가 없는 채널 제거
+    for (const key of Object.keys(byChannel)) {
+      if (byChannel[key].length === 0) delete byChannel[key]
     }
 
     const responseData: NewsFetchResponse = {
