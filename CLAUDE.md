@@ -46,6 +46,7 @@ app/
 └── api/
     ├── fetch-ads/route.ts            # Meta Ad Library API 호출
     ├── analyze/route.ts              # 광고 AI 분석
+    ├── upcoming-games/route.ts       # IGDB 기반 출시 예정 게임 (캐시 6h)
     └── news/
         ├── fetch/route.ts            # RSS 뉴스 수집 + 번역
         └── analyze/route.ts          # 뉴스 AI Top 5 분석
@@ -63,7 +64,8 @@ components/
     └── NewsListItem.tsx              # 채널별 뉴스 리스트 아이템
 lib/
 ├── metaApi.ts                        # Meta API 클라이언트
-└── scorer.ts                         # 광고 점수 계산
+├── scorer.ts                         # 광고 점수 계산
+└── igdb.ts                           # IGDB API 클라이언트 (Twitch OAuth + 출시 예정 게임 조회)
 types/
 ├── ad.ts                             # 광고 타입 정의
 └── news.ts                           # 뉴스 타입 정의
@@ -85,6 +87,9 @@ types/
 | `api.anthropic.com/v1/messages` | `app/api/news/analyze/route.ts` | 뉴스 Top 5 AI 분석 |
 | `api.anthropic.com/v1/messages` | `app/api/slack/briefing/route.ts` | 데일리 브리핑 생성 (Haiku) |
 | Slack Incoming Webhook | `app/api/slack/briefing/route.ts` | 슬랙 브리핑 발송 |
+| `id.twitch.tv/oauth2/token` | `lib/igdb.ts` | IGDB Twitch OAuth 토큰 발급 (메모리 캐싱) |
+| `api.igdb.com/v4/release_dates` | `lib/igdb.ts` | 출시 예정 모바일 게임 조회 (iOS/Android) |
+| `api.anthropic.com/v1/messages` | `app/api/upcoming-games/route.ts` | 게임명 한국어 번역 (Haiku) |
 
 환경변수:
 ```
@@ -92,20 +97,24 @@ META_ACCESS_TOKEN=   # Meta Graph API 액세스 토큰
 ANTHROPIC_API_KEY=   # Claude API 키
 SLACK_WEBHOOK_URL=   # Slack Incoming Webhook URL (슬랙 앱 설정에서 발급)
 CRON_SECRET=         # Vercel Cron 인증 시크릿
+IGDB_CLIENT_ID=      # Twitch 개발자 포털에서 발급
+IGDB_CLIENT_SECRET=  # Twitch 개발자 포털에서 발급
 ```
 
 ### RSS 뉴스 소스 (15개)
 - **한국 (5)**: 게임메카, 게임동아, 게임동아 뉴스, 루리웹, 게임샷
 - **해외 (10)**: GamesIndustry, GamesIndustry Data, VGC, Game Developer, Naavik, Mobile Gamer, TouchArcade, Pocket Gamer, PocketGamer.biz, GamingOnPhone
 
-### 출시 예정 게임 감지 (lib/upcomingDetector.ts)
-- 출시 관련 키워드("launches", "release date", "출시", "사전예약" 등)가 포함된 뉴스 자동 감지
-- 최근 7일 이내 기사 대상, 최대 10개, 최신순 정렬
-- 날짜 파싱: "March 20" → "3월 20일", "this week" → "이번 주"
-- 플랫폼 감지: iOS / Android / 모바일
-- API 응답에 `upcomingGames: UpcomingGame[]` 필드로 반환
-- `/dashboard` 페이지에서 AI Top 5 아래, 디펜스/모바일 Top 3 위에 섹션 표시
-- 슬랙 브리핑에도 `🎮 이번 주 출시 예정` 섹션 포함 (데이터 있을 때만)
+### 출시 예정 게임 (lib/igdb.ts + app/api/upcoming-games/route.ts)
+- IGDB API로 향후 7일 이내 iOS/Android 출시 예정 게임 조회 (플랫폼 ID: iOS=34, Android=39)
+- Twitch OAuth2 토큰은 모듈 레벨 메모리 캐싱, 만료 전 자동 갱신
+- 게임명 Claude Haiku로 배치 한국어 번역
+- 커버 이미지: IGDB t_cover_big 사이즈
+- API 응답: `{ games: UpcomingGame[], fetchedAt: string }`, 캐시 TTL 6시간
+- `?refresh=true` 파라미터로 강제 갱신
+- `/dashboard` 페이지에서 별도 state로 관리 (뉴스 데이터와 독립)
+- 슬랙 브리핑에서 `/api/upcoming-games` 호출 후 `🎮 이번 주 출시 예정` 섹션 포함 (데이터 있을 때만)
+- UpcomingGame 타입 필드: `id, name, nameKo, coverUrl, genres, releaseDate(YYYY-MM-DD), releaseDateLabel, platform[], igdbLink`
 
 ### 뉴스 번역 방식
 - 비한국어 뉴스를 Claude API로 배치 번역 (채널당 최대 10개)

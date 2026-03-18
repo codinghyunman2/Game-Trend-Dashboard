@@ -32,6 +32,7 @@ export default function LandingPage() {
       })
       .catch(() => {})
     fetch('/api/fetch-ads').catch(() => {})
+    fetch('/api/upcoming-games').catch(() => {})
   }, [])
 
   useEffect(() => {

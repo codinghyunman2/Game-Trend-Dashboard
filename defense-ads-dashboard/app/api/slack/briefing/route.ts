@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { NewsFetchResponse, UpcomingGame } from '@/types/news'
 import { FetchAdsResponse } from '@/types/ad'
 
+async function fetchUpcomingGamesData(): Promise<UpcomingGame[]> {
+  try {
+    const res = await fetch(`${getBaseUrl()}/api/upcoming-games`, { cache: 'no-store' })
+    if (!res.ok) return []
+    const data: { games: UpcomingGame[] } = await res.json()
+    return data.games ?? []
+  } catch (e) {
+    console.error('[slack/briefing] 출시 예정 게임 데이터 가져오기 실패:', e)
+    return []
+  }
+}
+
 export const dynamic = 'force-dynamic'
 
 const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토']
@@ -172,7 +184,7 @@ function parseBriefingLines(text: string): { news: BriefingNewsItem[]; adTrends:
   }
 }
 
-async function sendSlackMessage(briefingText: string, newsData?: NewsFetchResponse | null): Promise<boolean> {
+async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchResponse | null, upcomingGames: UpcomingGame[] = []): Promise<boolean> {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL
   if (!webhookUrl) {
     console.error('[slack/briefing] SLACK_WEBHOOK_URL 미설정')
@@ -200,18 +212,17 @@ async function sendSlackMessage(briefingText: string, newsData?: NewsFetchRespon
   const adTrendLines = adTrends.map((t) => `• ${escapeSlackText(t)}`).join('\n')
 
   // 출시 예정 게임 블록
-  const upcomingGames: UpcomingGame[] = newsData?.upcomingGames ?? []
   const upcomingBlock = upcomingGames.length > 0
     ? [{
         type: 'section',
         text: {
           type: 'mrkdwn',
           text: `🎮 *이번 주 출시 예정*\n${upcomingGames.slice(0, 5).map((g) => {
-            const name = escapeSlackText(g.titleKo || g.title)
+            const name = escapeSlackText(g.nameKo || g.name)
             const platform = g.platform.join('/')
-            const date = g.releaseDate ? ` · ${g.releaseDate}` : ''
-            return g.link && isValidHttpsUrl(g.link)
-              ? `• <${g.link}|${name}> — ${platform}${date}`
+            const date = g.releaseDateLabel ? ` · ${g.releaseDateLabel}` : ''
+            return g.igdbLink && isValidHttpsUrl(g.igdbLink)
+              ? `• <${g.igdbLink}|${name}> — ${platform}${date}`
               : `• ${name} — ${platform}${date}`
           }).join('\n')}`,
         },
@@ -279,8 +290,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 1. 뉴스 + 광고 데이터 병렬 가져오기
-  const [newsData, adsData] = await Promise.all([fetchNewsData(), fetchAdsData()])
+  // 1. 뉴스 + 광고 + 출시 예정 게임 데이터 병렬 가져오기
+  const [newsData, adsData, upcomingGames] = await Promise.all([fetchNewsData(), fetchAdsData(), fetchUpcomingGamesData()])
 
   if (!newsData || newsData.allNews.length === 0) {
     console.log('[slack/briefing] 뉴스 데이터 없음 — 발송 스킵')
@@ -294,7 +305,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. 슬랙 발송
-  const sent = await sendSlackMessage(briefingText, newsData)
+  const sent = await sendSlackMessage(briefingText, newsData, upcomingGames)
   if (!sent) {
     return NextResponse.json({ success: false, message: '슬랙 발송 실패' })
   }

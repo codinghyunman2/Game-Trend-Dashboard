@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { UpcomingGame } from '@/types/news'
 
 interface Props {
@@ -24,39 +25,27 @@ function PlatformBadge({ platform }: { platform: string }) {
   }
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-800/60 text-gray-400 border border-gray-700/40">
-      모바일
+      {platform}
     </span>
   )
 }
 
-function ReleaseDateLabel({ releaseDate }: { releaseDate: string | null }) {
-  if (!releaseDate) {
-    return <span className="text-yellow-400 text-xs font-medium">출시 임박</span>
-  }
-  if (releaseDate === '이번 주') {
-    return <span className="text-yellow-400 text-xs font-medium">이번 주</span>
-  }
-  return <span className="text-theme-secondary text-xs">{releaseDate} 출시</span>
-}
-
-function timeAgo(pubDate: string): string {
-  const diff = Date.now() - new Date(pubDate).getTime()
-  const hours = Math.floor(diff / 1000 / 60 / 60)
-  if (hours < 1) return '방금'
-  if (hours < 24) return `${hours}시간 전`
-  const days = Math.floor(hours / 24)
-  return `${days}일 전`
+function GenreBadge({ genre }: { genre: string }) {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-900/30 text-purple-300 border border-purple-700/30">
+      {genre}
+    </span>
+  )
 }
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center justify-between px-4 py-3 animate-pulse">
-      <div className="flex-1 min-w-0 mr-4">
+    <div className="flex items-center gap-3 px-4 py-3 animate-pulse">
+      <div className="w-12 h-16 bg-theme-border rounded flex-shrink-0" />
+      <div className="flex-1 min-w-0">
         <div className="h-4 bg-theme-border rounded w-2/3 mb-2" />
-        <div className="h-3 bg-theme-border rounded w-1/3" />
-      </div>
-      <div className="flex gap-1">
-        <div className="h-5 w-10 bg-theme-border rounded" />
+        <div className="h-3 bg-theme-border rounded w-1/3 mb-2" />
+        <div className="h-3 bg-theme-border rounded w-1/2" />
       </div>
     </div>
   )
@@ -80,35 +69,59 @@ export default function UpcomingGames({ games, loading }: Props) {
   return (
     <div className="rounded-xl overflow-hidden bg-theme-card border border-theme-border" style={{ boxShadow: 'var(--card-shadow)' }}>
       {games.map((game, index) => (
-        <div key={`${game.link}-${index}`}>
+        <div key={game.id}>
           {index > 0 && <div className="border-t border-theme-border" />}
-          <div className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors">
-            <div className="flex-1 min-w-0 mr-4">
-              <p className="text-sm font-medium text-theme-text truncate">
-                {game.titleKo || game.title}
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <ReleaseDateLabel releaseDate={game.releaseDate} />
-                <span className="text-theme-secondary text-xs">·</span>
-                <span className="text-theme-secondary text-xs truncate">{game.source}</span>
-                <span className="text-theme-secondary text-xs">·</span>
-                <span className="text-theme-secondary text-xs">{timeAgo(game.pubDate)}</span>
-              </div>
+          <div className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+            {/* Cover Image */}
+            <div className="w-12 h-16 rounded overflow-hidden flex-shrink-0 bg-gray-800 flex items-center justify-center">
+              {game.coverUrl ? (
+                <Image
+                  src={game.coverUrl}
+                  alt={game.nameKo || game.name}
+                  width={48}
+                  height={64}
+                  className="object-cover w-full h-full"
+                  unoptimized
+                />
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-gray-600" fill="currentColor">
+                  <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5S14.67 12 15.5 12s1.5.67 1.5 1.5S16.33 15 15.5 15zm3-3c-.83 0-1.5-.67-1.5-1.5S17.67 10 18.5 10s1.5.67 1.5 1.5S19.33 12 18.5 12z" />
+                </svg>
+              )}
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="flex gap-1">
-                {game.platform.map((p) => (
-                  <PlatformBadge key={p} platform={p} />
-                ))}
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-theme-text truncate">
+                {game.nameKo || game.name}
+              </p>
+
+              {/* Genres */}
+              {game.genres.length > 0 && (
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {game.genres.slice(0, 2).map((genre) => (
+                    <GenreBadge key={genre} genre={genre} />
+                  ))}
+                </div>
+              )}
+
+              {/* Platform + Date + Link */}
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <div className="flex gap-1">
+                  {game.platform.map((p) => (
+                    <PlatformBadge key={p} platform={p} />
+                  ))}
+                </div>
+                <span className="text-theme-secondary text-xs">{game.releaseDateLabel} 출시</span>
+                <a
+                  href={game.igdbLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors ml-auto"
+                >
+                  IGDB 보기 →
+                </a>
               </div>
-              <a
-                href={game.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap"
-              >
-                원문보기 →
-              </a>
             </div>
           </div>
         </div>

@@ -31,13 +31,15 @@ export interface AnalyzedNews {
 }
 
 export interface UpcomingGame {
-  title: string;
-  titleKo: string;
-  releaseDate: string | null;
-  platform: string[];
-  source: string;
-  link: string;
-  pubDate: string;
+  id: string;
+  name: string;
+  nameKo: string;
+  coverUrl: string | null;
+  genres: string[];
+  releaseDate: string;       // YYYY-MM-DD
+  releaseDateLabel: string;  // "오늘", "내일", "N일 후", "3월 20일"
+  platform: string[];        // ["iOS", "Android"]
+  igdbLink: string;
 }
 
 export interface NewsFetchResponse {
@@ -45,7 +47,6 @@ export interface NewsFetchResponse {
   defenseTop3: NewsItem[];
   mobileTop3: NewsItem[];
   byChannel: { [sourceKey: string]: NewsItem[] };
-  upcomingGames: UpcomingGame[];
   fetchedAt: string;
   cachedAt?: string;
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { NewsItem, AnalyzedNews, NewsFetchResponse, NewsCacheEntry } from '@/types/news'
+import { NewsItem, AnalyzedNews, NewsFetchResponse, NewsCacheEntry, UpcomingGame } from '@/types/news'
 import NewsTop5 from '@/components/news/NewsTop5'
 import NewsCard from '@/components/news/NewsCard'
 import ChannelTabs from '@/components/news/ChannelTabs'
@@ -30,6 +30,8 @@ export default function NewsHub() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<string>('')
   const hasInitializedChannel = useRef(false)
+  const [upcomingGames, setUpcomingGames] = useState<UpcomingGame[]>([])
+  const [isUpcomingLoading, setIsUpcomingLoading] = useState(true)
 
   const fetchAnalysis = useCallback(async (allNews: NewsItem[], cacheTimestamp?: number) => {
     if (allNews.length === 0) return
@@ -137,9 +139,28 @@ export default function NewsHub() {
     }
   }, [fetchAnalysis])
 
+  const fetchUpcomingGames = useCallback(async (forceRefresh = false) => {
+    setIsUpcomingLoading(true)
+    try {
+      const url = forceRefresh ? '/api/upcoming-games?refresh=true' : '/api/upcoming-games'
+      const res = await fetch(url)
+      if (res.ok) {
+        const data: { games: UpcomingGame[] } = await res.json()
+        setUpcomingGames(data.games ?? [])
+      } else {
+        setUpcomingGames([])
+      }
+    } catch {
+      setUpcomingGames([])
+    } finally {
+      setIsUpcomingLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchNews()
-  }, [fetchNews])
+    fetchUpcomingGames()
+  }, [fetchNews, fetchUpcomingGames])
 
   // Build channel name map
   const channelNames: Record<string, string> = {}
@@ -194,10 +215,10 @@ export default function NewsHub() {
             </section>
 
             {/* Upcoming Games */}
-            {(isLoading || (newsData.upcomingGames && newsData.upcomingGames.length > 0)) && (
+            {(isUpcomingLoading || upcomingGames.length > 0) && (
               <section className="mb-10">
                 <h2 className="text-lg font-semibold mb-4 text-theme-text">이번 주 출시 예정 게임</h2>
-                <UpcomingGames games={newsData.upcomingGames ?? []} loading={false} />
+                <UpcomingGames games={upcomingGames} loading={isUpcomingLoading} />
               </section>
             )}
 
