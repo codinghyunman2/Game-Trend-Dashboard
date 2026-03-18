@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import UpcomingGames from '@/components/news/UpcomingGames'
-import { UpcomingGame } from '@/types/news'
 
 function useCountUp(target: number, duration: number = 1500, start: boolean = false) {
   const [count, setCount] = useState(0)
@@ -25,8 +23,6 @@ function useCountUp(target: number, duration: number = 1500, start: boolean = fa
 export default function LandingPage() {
   const [newsCount, setNewsCount] = useState<number | null>(null)
   const [started, setStarted] = useState(false)
-  const [upcomingGames, setUpcomingGames] = useState<UpcomingGame[]>([])
-  const [upcomingGamesLoading, setUpcomingGamesLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/news/fetch')
@@ -36,13 +32,7 @@ export default function LandingPage() {
       })
       .catch(() => {})
     fetch('/api/fetch-ads').catch(() => {})
-    fetch('/api/upcoming-games')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data?.games)) setUpcomingGames(data.games.slice(0, 3))
-      })
-      .catch(() => {})
-      .finally(() => setUpcomingGamesLoading(false))
+    fetch('/api/upcoming-games').catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -77,7 +67,7 @@ export default function LandingPage() {
           >
             매일 아침 5분,
             <br />
-            게임 업계를 
+            게임 업계를
             <span style={{ color: 'var(--color-accent)' }}> 한눈에</span>
           </h1>
           <p
@@ -140,37 +130,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* 섹션 2.5 — 이번 주 출시 예정 게임 */}
-      {(upcomingGamesLoading || upcomingGames.length > 0) && (
-        <section
-          className="px-6 lg:px-20 py-12 lg:py-16"
-          style={{ backgroundColor: 'var(--color-bg)' }}
-        >
-          <div className="max-w-2xl w-full mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2
-                className="text-lg sm:text-xl font-bold"
-                style={{ color: 'var(--color-text-primary)' }}
-              >
-                이번 주 출시 예정 게임
-              </h2>
-            </div>
-            <UpcomingGames games={upcomingGames} loading={upcomingGamesLoading} />
-            {!upcomingGamesLoading && upcomingGames.length > 0 && (
-              <div className="mt-3 text-right">
-                <Link
-                  href="/dashboard"
-                  className="text-sm font-medium transition-colors hover:opacity-80"
-                  style={{ color: 'var(--color-accent)' }}
-                >
-                  대시보드에서 전체 보기 →
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       {/* 섹션 3 — 게임 뉴스 */}
       <section
@@ -241,7 +200,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 섹션 4 — AI 분석 */}
+      {/* 섹션 4 — 출시 예정 게임 */}
       <section
         className="px-6 lg:px-20 py-16 lg:py-24"
         style={{ backgroundColor: 'var(--color-surface)' }}
@@ -253,28 +212,79 @@ export default function LandingPage() {
             style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
           >
             <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
-              <circle cx="40" cy="40" r="30" stroke="var(--color-accent)" strokeWidth="3" opacity="0.3" />
-              <circle cx="40" cy="40" r="20" stroke="var(--color-accent)" strokeWidth="3" opacity="0.5" />
-              <circle cx="40" cy="40" r="8" fill="var(--color-accent)" />
-              <line x1="40" y1="10" x2="40" y2="22" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
-              <line x1="40" y1="58" x2="40" y2="70" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
-              <line x1="10" y1="40" x2="22" y2="40" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
-              <line x1="58" y1="40" x2="70" y2="40" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
+              <rect x="12" y="8" width="56" height="44" rx="6" stroke="var(--color-accent)" strokeWidth="3" opacity="0.4" />
+              <rect x="20" y="18" width="16" height="16" rx="3" fill="var(--color-accent)" opacity="0.7" />
+              <rect x="44" y="18" width="16" height="16" rx="3" fill="var(--color-accent)" opacity="0.4" />
+              <rect x="20" y="38" width="8" height="8" rx="2" fill="var(--color-accent)" opacity="0.5" />
+              <rect x="32" y="38" width="8" height="8" rx="2" fill="var(--color-accent)" opacity="0.3" />
+              <line x1="40" y1="56" x2="40" y2="68" stroke="var(--color-accent)" strokeWidth="3" opacity="0.5" />
+              <rect x="24" y="66" width="32" height="6" rx="3" fill="var(--color-accent)" opacity="0.4" />
             </svg>
             <div className="text-center">
               <p
                 className="text-5xl font-extrabold mb-1"
                 style={{ color: 'var(--color-accent)' }}
               >
-                Top 5
+                7일
               </p>
               <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                매일 AI가 자동 선별
+                이내 출시 예정 자동 수집
               </p>
             </div>
           </div>
           {/* 텍스트 (우) */}
           <div className="order-1 lg:order-2">
+            <div className="flex items-center gap-2 mb-6">
+              <span
+                className="inline-block text-xs font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full"
+                style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+              >
+                GAMES
+              </span>
+              <span
+                className="inline-block text-xs font-bold tracking-[0.15em] uppercase px-2 py-1 rounded-full text-white"
+                style={{ background: 'var(--color-accent)' }}
+              >
+                NEW
+              </span>
+            </div>
+            <h2
+              className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-6"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              이번 주 출시 예정
+              <br />
+              게임
+            </h2>
+            <p
+              className="text-sm sm:text-lg leading-relaxed mb-8"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              IGDB와 게임메카 데이터를 기반으로 향후 7일 이내 출시 예정인 모바일 게임을 매일 자동으로 업데이트합니다.
+            </p>
+            <ul className="space-y-3">
+              {['글로벌 신작 (IGDB)', '국내 신작 (게임메카)', '매일 자동 업데이트'].map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: 'var(--color-accent)' }}
+                  />
+                  <span className="text-sm sm:text-base" style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* 섹션 5 — AI 분석 */}
+      <section
+        className="px-6 lg:px-20 py-16 lg:py-24"
+        style={{ backgroundColor: 'var(--color-bg)' }}
+      >
+        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* 텍스트 */}
+          <div>
             <span
               className="inline-block text-xs font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full mb-6"
               style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
@@ -309,17 +319,66 @@ export default function LandingPage() {
               ))}
             </ul>
           </div>
+          {/* 비주얼 */}
+          <div
+            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px]"
+            style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+          >
+            <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
+              <circle cx="40" cy="40" r="30" stroke="var(--color-accent)" strokeWidth="3" opacity="0.3" />
+              <circle cx="40" cy="40" r="20" stroke="var(--color-accent)" strokeWidth="3" opacity="0.5" />
+              <circle cx="40" cy="40" r="8" fill="var(--color-accent)" />
+              <line x1="40" y1="10" x2="40" y2="22" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
+              <line x1="40" y1="58" x2="40" y2="70" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
+              <line x1="10" y1="40" x2="22" y2="40" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
+              <line x1="58" y1="40" x2="70" y2="40" stroke="var(--color-accent)" strokeWidth="2" opacity="0.6" />
+            </svg>
+            <div className="text-center">
+              <p
+                className="text-5xl font-extrabold mb-1"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                Top 5
+              </p>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                매일 AI가 자동 선별
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 섹션 5 — 광고 트렌드 */}
+      {/* 섹션 6 — 광고 트렌드 */}
       <section
         className="px-6 lg:px-20 py-16 lg:py-24"
-        style={{ backgroundColor: 'var(--color-bg)' }}
+        style={{ backgroundColor: 'var(--color-surface)' }}
       >
         <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* 텍스트 */}
-          <div>
+          {/* 비주얼 (좌) */}
+          <div
+            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px] order-2 lg:order-1"
+            style={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+          >
+            <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
+              <rect x="10" y="50" width="12" height="22" rx="2" fill="var(--color-accent)" opacity="0.4" />
+              <rect x="28" y="36" width="12" height="36" rx="2" fill="var(--color-accent)" opacity="0.6" />
+              <rect x="46" y="22" width="12" height="50" rx="2" fill="var(--color-accent)" opacity="0.85" />
+              <rect x="64" y="10" width="10" height="62" rx="2" fill="var(--color-accent)" />
+            </svg>
+            <div className="text-center">
+              <p
+                className="text-5xl font-extrabold mb-1"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                90일
+              </p>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                광고 데이터 자동 수집
+              </p>
+            </div>
+          </div>
+          {/* 텍스트 (우) */}
+          <div className="order-1 lg:order-2">
             <span
               className="inline-block text-xs font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full mb-6"
               style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
@@ -354,38 +413,15 @@ export default function LandingPage() {
               ))}
             </ul>
           </div>
-          {/* 비주얼 */}
-          <div
-            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px]"
-            style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-          >
-            <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
-              <rect x="10" y="50" width="12" height="22" rx="2" fill="var(--color-accent)" opacity="0.4" />
-              <rect x="28" y="36" width="12" height="36" rx="2" fill="var(--color-accent)" opacity="0.6" />
-              <rect x="46" y="22" width="12" height="50" rx="2" fill="var(--color-accent)" opacity="0.85" />
-              <rect x="64" y="10" width="10" height="62" rx="2" fill="var(--color-accent)" />
-            </svg>
-            <div className="text-center">
-              <p
-                className="text-5xl font-extrabold mb-1"
-                style={{ color: 'var(--color-accent)' }}
-              >
-                90일
-              </p>
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                광고 데이터 자동 수집
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* 섹션 6 — CTA */}
+      {/* 섹션 7 — CTA */}
       <section
         className="flex flex-col items-center justify-center px-6 py-16 lg:py-24 text-center"
         style={{
           background: 'radial-gradient(ellipse at 50% 100%, var(--color-accent-soft) 0%, transparent 60%)',
-          backgroundColor: 'var(--color-surface)',
+          backgroundColor: 'var(--color-bg)',
         }}
       >
         <h2
