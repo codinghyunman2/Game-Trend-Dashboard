@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import UpcomingGames from '@/components/news/UpcomingGames'
+import { UpcomingGame } from '@/types/news'
 
 function useCountUp(target: number, duration: number = 1500, start: boolean = false) {
   const [count, setCount] = useState(0)
@@ -23,6 +25,8 @@ function useCountUp(target: number, duration: number = 1500, start: boolean = fa
 export default function LandingPage() {
   const [newsCount, setNewsCount] = useState<number | null>(null)
   const [started, setStarted] = useState(false)
+  const [upcomingGames, setUpcomingGames] = useState<UpcomingGame[]>([])
+  const [upcomingGamesLoading, setUpcomingGamesLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/news/fetch')
@@ -32,7 +36,13 @@ export default function LandingPage() {
       })
       .catch(() => {})
     fetch('/api/fetch-ads').catch(() => {})
-    fetch('/api/upcoming-games').catch(() => {})
+    fetch('/api/upcoming-games')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data?.games)) setUpcomingGames(data.games.slice(0, 3))
+      })
+      .catch(() => {})
+      .finally(() => setUpcomingGamesLoading(false))
   }, [])
 
   useEffect(() => {
@@ -130,6 +140,37 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* 섹션 2.5 — 이번 주 출시 예정 게임 */}
+      {(upcomingGamesLoading || upcomingGames.length > 0) && (
+        <section
+          className="px-6 lg:px-20 py-12 lg:py-16"
+          style={{ backgroundColor: 'var(--color-bg)' }}
+        >
+          <div className="max-w-2xl w-full mx-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                className="text-lg sm:text-xl font-bold"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                이번 주 출시 예정 게임
+              </h2>
+            </div>
+            <UpcomingGames games={upcomingGames} loading={upcomingGamesLoading} />
+            {!upcomingGamesLoading && upcomingGames.length > 0 && (
+              <div className="mt-3 text-right">
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium transition-colors hover:opacity-80"
+                  style={{ color: 'var(--color-accent)' }}
+                >
+                  대시보드에서 전체 보기 →
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* 섹션 3 — 게임 뉴스 */}
       <section
