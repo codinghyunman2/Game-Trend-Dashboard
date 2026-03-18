@@ -30,11 +30,22 @@ export interface AnalyzedNews {
   pubDate: string;
 }
 
+export interface UpcomingGame {
+  title: string;
+  titleKo: string;
+  releaseDate: string | null;
+  platform: string[];
+  source: string;
+  link: string;
+  pubDate: string;
+}
+
 export interface NewsFetchResponse {
   allNews: NewsItem[];
   defenseTop3: NewsItem[];
   mobileTop3: NewsItem[];
   byChannel: { [sourceKey: string]: NewsItem[] };
+  upcomingGames: UpcomingGame[];
   fetchedAt: string;
   cachedAt?: string;
 }

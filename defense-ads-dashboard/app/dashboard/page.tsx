@@ -6,6 +6,7 @@ import NewsTop5 from '@/components/news/NewsTop5'
 import NewsCard from '@/components/news/NewsCard'
 import ChannelTabs from '@/components/news/ChannelTabs'
 import NewsListItem from '@/components/news/NewsListItem'
+import UpcomingGames from '@/components/news/UpcomingGames'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 const NEWS_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
@@ -191,6 +192,14 @@ export default function NewsHub() {
               </div>
               <NewsTop5 items={analyzedTop5} loading={isAnalyzing} />
             </section>
+
+            {/* Upcoming Games */}
+            {(isLoading || (newsData.upcomingGames && newsData.upcomingGames.length > 0)) && (
+              <section className="mb-10">
+                <h2 className="text-lg font-semibold mb-4 text-theme-text">이번 주 출시 예정 게임</h2>
+                <UpcomingGames games={newsData.upcomingGames ?? []} loading={false} />
+              </section>
+            )}
 
             {/* Defense Top 3 */}
             {newsData.defenseTop3.length > 0 && (

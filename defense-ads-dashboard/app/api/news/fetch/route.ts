@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NewsItem, NewsFetchResponse } from '@/types/news'
 import { getCache, setCache } from '@/lib/cache'
+import { detectUpcomingGames } from '@/lib/upcomingDetector'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,12 @@ const RSS_SOURCES = [
   // 뉴스레터
   { key: 'naavik', name: 'Naavik', url: 'https://naavik.co/feed', isKorean: false },
   { key: 'mobilegamer', name: 'Mobile Gamer', url: 'https://mobilegamer.biz/feed/', isKorean: false },
+
+  // 모바일 게임 출시 정보
+  { key: 'toucharcade', name: 'TouchArcade', url: 'https://toucharcade.com/feed/', isKorean: false },
+  { key: 'pocketgamer', name: 'Pocket Gamer', url: 'https://www.pocketgamer.com/rss/', isKorean: false },
+  { key: 'pocketgamer_biz', name: 'PocketGamer.biz', url: 'https://www.pocketgamer.biz/feed/', isKorean: false },
+  { key: 'gamingonphone', name: 'GamingOnPhone', url: 'https://gamingonphone.com/feed/', isKorean: false },
 ] as const
 
 type RSSSource = typeof RSS_SOURCES[number]
@@ -256,11 +263,20 @@ export async function GET(request: NextRequest) {
       byChannel[item.sourceKey].push(item)
     }
 
+    // 출시 예정 게임 감지 (7일 이내, 신규 채널 우선 + 전체 뉴스 대상)
+    const upcomingSourceKeys = new Set(['toucharcade', 'pocketgamer', 'pocketgamer_biz', 'gamingonphone'])
+    const upcomingCandidates = [
+      ...allNews.filter((n) => upcomingSourceKeys.has(n.sourceKey)),
+      ...allNews.filter((n) => !upcomingSourceKeys.has(n.sourceKey)),
+    ]
+    const upcomingGames = detectUpcomingGames(upcomingCandidates)
+
     const responseData: NewsFetchResponse = {
       allNews,
       defenseTop3,
       mobileTop3,
       byChannel,
+      upcomingGames,
       fetchedAt: new Date().toISOString(),
     }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { NewsFetchResponse } from '@/types/news'
+import { NewsFetchResponse, UpcomingGame } from '@/types/news'
 import { FetchAdsResponse } from '@/types/ad'
 
 export const dynamic = 'force-dynamic'
@@ -172,7 +172,7 @@ function parseBriefingLines(text: string): { news: BriefingNewsItem[]; adTrends:
   }
 }
 
-async function sendSlackMessage(briefingText: string): Promise<boolean> {
+async function sendSlackMessage(briefingText: string, newsData?: NewsFetchResponse | null): Promise<boolean> {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL
   if (!webhookUrl) {
     console.error('[slack/briefing] SLACK_WEBHOOK_URL 미설정')
@@ -199,6 +199,25 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
 
   const adTrendLines = adTrends.map((t) => `• ${escapeSlackText(t)}`).join('\n')
 
+  // 출시 예정 게임 블록
+  const upcomingGames: UpcomingGame[] = newsData?.upcomingGames ?? []
+  const upcomingBlock = upcomingGames.length > 0
+    ? [{
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `🎮 *이번 주 출시 예정*\n${upcomingGames.slice(0, 5).map((g) => {
+            const name = escapeSlackText(g.titleKo || g.title)
+            const platform = g.platform.join('/')
+            const date = g.releaseDate ? ` · ${g.releaseDate}` : ''
+            return g.link && isValidHttpsUrl(g.link)
+              ? `• <${g.link}|${name}> — ${platform}${date}`
+              : `• ${name} — ${platform}${date}`
+          }).join('\n')}`,
+        },
+      }]
+    : []
+
   const blocks = [
     {
       type: 'section',
@@ -221,6 +240,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
         text: `🎮 *광고 트렌드*\n${adTrendLines}`,
       },
     },
+    ...upcomingBlock,
     {
       type: 'section',
       text: {
@@ -274,7 +294,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. 슬랙 발송
-  const sent = await sendSlackMessage(briefingText)
+  const sent = await sendSlackMessage(briefingText, newsData)
   if (!sent) {
     return NextResponse.json({ success: false, message: '슬랙 발송 실패' })
   }
