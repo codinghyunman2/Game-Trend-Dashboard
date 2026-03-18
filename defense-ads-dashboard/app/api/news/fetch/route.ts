@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NewsItem, NewsFetchResponse } from '@/types/news'
 import { getCache, setCache } from '@/lib/cache'
+import { extractClientIp, createRateLimiter, auditLog } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
 const NEWS_CACHE_KEY = 'news_data'
 const NEWS_CACHE_TTL = 1000 * 60 * 60 * 3 // 3시간
+
+// 10 req/min per IP
+const rateLimiter = createRateLimiter(60_000, 10)
 
 interface NewsCachePayload {
   data: NewsFetchResponse
@@ -85,8 +89,11 @@ function parseRSSItems(xml: string, source: RSSSource): NewsItem[] {
 
     if (!title || !link) continue
 
+    // Strip HTML from description before storing (XSS defence for any future rendering)
+    const plainDescription = description.replace(/<[^>]+>/g, '')
+
     const pubDate = pubDateStr ? new Date(pubDateStr).toISOString() : new Date().toISOString()
-    const summary = decodeHtmlEntities(description.replace(/<[^>]+>/g, '').slice(0, 200))
+    const summary = decodeHtmlEntities(plainDescription.slice(0, 200))
 
     const id = Buffer.from(`${title.slice(0, 50)}_${source.key}`).toString('base64').slice(0, 16)
 
@@ -119,7 +126,7 @@ async function fetchRSSFeed(source: RSSSource): Promise<FetchResult> {
       signal: controller.signal,
       headers: { 'User-Agent': 'GameTrendBot/1.0' },
     })
-    if (!res.ok) return { source, items: [], error: `HTTP ${res.status} ${res.statusText}` }
+    if (!res.ok) return { source, items: [], error: `HTTP ${res.status}` }
     const xml = await res.text()
     const items = parseRSSItems(xml, source)
     return { source, items }
@@ -135,10 +142,7 @@ async function batchTranslate(items: NewsItem[]): Promise<NewsItem[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey || items.length === 0) return items
 
-  const toTranslate = items
-  if (toTranslate.length === 0) return items
-
-  const translationInput = toTranslate.map((item, i) => ({
+  const translationInput = items.map((item, i) => ({
     idx: i,
     title: item.title,
     summary: item.summary,
@@ -181,12 +185,11 @@ JSON 배열만 출력해주세요. 마크다운 코드 블록 없이 순수 JSON
       translationMap.set(t.idx, { titleKo: t.titleKo, summaryKo: t.summaryKo })
     }
 
-    // Apply translations back
-    for (let i = 0; i < toTranslate.length; i++) {
+    for (let i = 0; i < items.length; i++) {
       const trans = translationMap.get(i)
       if (trans) {
-        toTranslate[i].titleKo = trans.titleKo
-        toTranslate[i].summaryKo = trans.summaryKo
+        items[i].titleKo = trans.titleKo
+        items[i].summaryKo = trans.summaryKo
       }
     }
   } catch {
@@ -197,28 +200,34 @@ JSON 배열만 출력해주세요. 마크다운 코드 블록 없이 순수 JSON
 }
 
 export async function GET(request: NextRequest) {
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const ip = extractClientIp(request.headers)
+  const rl = rateLimiter.check(ip)
+  if (!rl.allowed) {
+    auditLog('RATE_LIMIT', ip, '/api/news/fetch')
+    return NextResponse.json(
+      { error: 'RATE_LIMITED', message: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      },
+    )
+  }
+
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
 
   if (!forceRefresh) {
     const cached = getCache<NewsCachePayload>(NEWS_CACHE_KEY)
     if (cached) {
-      console.log('[cache] 캐시 반환')
       return NextResponse.json({ ...cached.data, cachedAt: cached.cachedAt })
     }
   }
 
   try {
-    const results = await Promise.all(
-      RSS_SOURCES.map((source) => fetchRSSFeed(source))
-    )
+    const results = await Promise.all(RSS_SOURCES.map((source) => fetchRSSFeed(source)))
 
     let allNews: NewsItem[] = []
     for (const result of results) {
-      if (result.error) {
-        console.log(`[${result.source.name}] ❌ 실패 - ${result.error}`)
-      } else {
-        console.log(`[${result.source.name}] ✅ 성공 - ${result.items.length}개 수집`)
-      }
       allNews.push(...result.items)
     }
 
@@ -226,14 +235,10 @@ export async function GET(request: NextRequest) {
     const threeDaysAgo = new Date()
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
     allNews = allNews.filter((item) => {
-      try {
-        return new Date(item.pubDate) >= threeDaysAgo
-      } catch {
-        return false
-      }
+      try { return new Date(item.pubDate) >= threeDaysAgo } catch { return false }
     })
 
-    // Dedup by title prefix + sourceKey
+    // Deduplicate by title prefix + sourceKey
     const seen = new Set<string>()
     allNews = allNews.filter((item) => {
       const key = `${item.title.slice(0, 50)}_${item.sourceKey}`
@@ -245,10 +250,10 @@ export async function GET(request: NextRequest) {
     // Sort by date descending
     allNews.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
 
-    // 번역 대상: allNews 상위 10개 중 비한국어
+    // 번역 대상: 상위 10개 중 비한국어
     const translateCandidateIds = new Set<string>(allNews.slice(0, 10).map((n) => n.id))
 
-    // Group by channel (RSS_SOURCES 순서로 초기화하여 탭 순서 고정)
+    // Group by channel
     const byChannel: Record<string, NewsItem[]> = {}
     for (const source of RSS_SOURCES) {
       byChannel[source.key] = []
@@ -256,7 +261,6 @@ export async function GET(request: NextRequest) {
     for (const item of allNews) {
       byChannel[item.sourceKey].push(item)
     }
-    // 뉴스가 없는 채널 제거
     for (const key of Object.keys(byChannel)) {
       if (byChannel[key].length === 0) delete byChannel[key]
     }
@@ -271,23 +275,19 @@ export async function GET(request: NextRequest) {
     setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
     const response = NextResponse.json({ ...responseData, cachedAt })
 
-    // 번역은 백그라운드에서 실행 → 다음 캐시 요청부터 번역된 데이터 제공
+    // Background translation
     const toTranslate = allNews.filter((n) => !n.isKorean && translateCandidateIds.has(n.id))
-
     if (toTranslate.length > 0) {
-      console.log(`[번역] 백그라운드 번역 시작 (${toTranslate.length}개)`)
       batchTranslate(toTranslate).then(() => {
         setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
-        console.log('[번역] 완료 — 캐시 업데이트')
-      }).catch((e) => console.warn('[번역] 실패:', e))
+      }).catch(() => {/* silent */})
     }
 
     return response
-  } catch (error) {
-    console.error('News fetch error:', error)
+  } catch {
     return NextResponse.json(
-      { error: 'Failed to fetch news', message: '뉴스를 가져오는 중 오류가 발생했습니다.' },
-      { status: 500 }
+      { error: 'FETCH_ERROR', message: '뉴스를 가져오는 중 오류가 발생했습니다.' },
+      { status: 500 },
     )
   }
 }

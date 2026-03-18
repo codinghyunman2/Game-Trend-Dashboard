@@ -2,28 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { MetaAd, AdAnalysis } from '@/types/ad'
 import { getCache, setCache } from '@/lib/cache'
+import {
+  extractClientIp,
+  createRateLimiter,
+  isBodyTooLarge,
+  auditLog,
+} from '@/lib/security'
 
-const MAX_BODY_SIZE = 100 * 1024 // 100KB
+const MAX_BODY_SIZE = 100 * 1024 // 100 KB
 const MAX_ADS = 10
 const ADS_ANALYSIS_CACHE_KEY = 'ads_analysis'
 const ADS_ANALYSIS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 
-// Simple in-memory rate limiter (resets on server restart)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
-const RATE_LIMIT_MAX = 5 // 5 requests per minute per IP
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false
-  entry.count++
-  return true
-}
+// 5 req/min per IP (AI calls are expensive)
+const rateLimiter = createRateLimiter(60_000, 5)
 
 interface AnalysisCachePayload {
   analyses: AdAnalysis[]
@@ -35,80 +27,85 @@ export async function POST(request: NextRequest) {
   if (!apiKey) {
     return NextResponse.json(
       { error: 'ANTHROPIC_API_KEY_NOT_SET' },
-      { status: 401 }
+      { status: 401 },
     )
   }
 
-  // Rate limiting
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
-  if (!checkRateLimit(ip)) {
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  // Use rightmost non-private IP (prevents x-forwarded-for spoofing)
+  const ip = extractClientIp(request.headers)
+  const rl = rateLimiter.check(ip)
+  if (!rl.allowed) {
+    auditLog('RATE_LIMIT', ip, '/api/analyze')
     return NextResponse.json(
       { error: 'RATE_LIMITED', message: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.' },
-      { status: 429 }
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      },
     )
   }
 
-  // Body size check
-  const contentLength = request.headers.get('content-length')
-  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_SIZE) {
+  // ── Body size ──────────────────────────────────────────────────────────────
+  if (isBodyTooLarge(request.headers.get('content-length'), MAX_BODY_SIZE)) {
     return NextResponse.json(
       { error: 'PAYLOAD_TOO_LARGE', message: '요청 크기가 너무 큽니다.' },
-      { status: 413 }
+      { status: 413 },
     )
   }
 
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
 
+  // ── Parse & validate body ──────────────────────────────────────────────────
+  let body: unknown
   try {
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'INVALID_JSON', message: '잘못된 요청 형식입니다.' },
-        { status: 400 }
-      )
+    body = await request.json()
+  } catch {
+    return NextResponse.json(
+      { error: 'INVALID_JSON', message: '잘못된 요청 형식입니다.' },
+      { status: 400 },
+    )
+  }
+
+  if (!body || typeof body !== 'object' || !('ads' in body)) {
+    return NextResponse.json(
+      { error: 'INVALID_REQUEST', message: '잘못된 요청 형식입니다.' },
+      { status: 400 },
+    )
+  }
+
+  const { ads } = body as { ads: unknown }
+
+  if (!Array.isArray(ads) || ads.length === 0) {
+    return NextResponse.json(
+      { error: 'NO_ADS_PROVIDED', message: '분석할 광고가 없습니다.' },
+      { status: 400 },
+    )
+  }
+
+  if (ads.length > MAX_ADS) {
+    return NextResponse.json(
+      { error: 'TOO_MANY_ADS', message: `최대 ${MAX_ADS}개의 광고만 분석할 수 있습니다.` },
+      { status: 400 },
+    )
+  }
+
+  if (!forceRefresh) {
+    const cached = getCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY)
+    if (cached) {
+      return NextResponse.json(cached.analyses)
     }
+  }
 
-    if (!body || typeof body !== 'object' || !('ads' in body)) {
-      return NextResponse.json(
-        { error: 'INVALID_REQUEST', message: '잘못된 요청 형식입니다.' },
-        { status: 400 }
-      )
-    }
-
-    const { ads } = body as { ads: unknown }
-
-    if (!Array.isArray(ads) || ads.length === 0) {
-      return NextResponse.json(
-        { error: 'NO_ADS_PROVIDED', message: '분석할 광고가 없습니다.' },
-        { status: 400 }
-      )
-    }
-
-    if (ads.length > MAX_ADS) {
-      return NextResponse.json(
-        { error: 'TOO_MANY_ADS', message: `최대 ${MAX_ADS}개의 광고만 분석할 수 있습니다.` },
-        { status: 400 }
-      )
-    }
-
-    if (!forceRefresh) {
-      const cached = getCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY)
-      if (cached) {
-        console.log('[cache hit] ads_analysis')
-        return NextResponse.json(cached.analyses)
-      }
-    }
-    console.log('[cache miss] ads_analysis')
-
+  try {
     const topAds = (ads as MetaAd[]).slice(0, 5)
 
+    // Sanitise ad fields: truncate to reasonable lengths before sending to AI
     const adsData = topAds.map((ad, i) => ({
       index: i + 1,
-      title: String(ad.ad_creative_link_titles?.[0] ?? ''),
-      body: String(ad.ad_creative_bodies?.[0] ?? ''),
-      ad_snapshot_url: String(ad.ad_snapshot_url ?? ''),
+      title: String(ad.ad_creative_link_titles?.[0] ?? '').slice(0, 500),
+      body: String(ad.ad_creative_bodies?.[0] ?? '').slice(0, 1000),
+      ad_snapshot_url: String(ad.ad_snapshot_url ?? '').slice(0, 500),
     }))
 
     const client = new Anthropic({ apiKey })
@@ -147,7 +144,7 @@ ${JSON.stringify(adsData, null, 2)}
     if (!textContent || textContent.type !== 'text') {
       return NextResponse.json(
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
@@ -158,25 +155,26 @@ ${JSON.stringify(adsData, null, 2)}
     let analyses: AdAnalysis[]
     try {
       const parsed = JSON.parse(responseText)
-      if (!Array.isArray(parsed)) {
-        throw new Error('AI 응답이 배열 형식이 아닙니다.')
-      }
+      if (!Array.isArray(parsed)) throw new Error('not array')
       analyses = parsed as AdAnalysis[]
     } catch {
       return NextResponse.json(
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
-        { status: 500 }
+        { status: 500 },
       )
     }
 
-    setCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY, { analyses, cachedAt: new Date().toISOString() }, ADS_ANALYSIS_CACHE_TTL)
+    setCache<AnalysisCachePayload>(
+      ADS_ANALYSIS_CACHE_KEY,
+      { analyses, cachedAt: new Date().toISOString() },
+      ADS_ANALYSIS_CACHE_TTL,
+    )
 
     return NextResponse.json(analyses)
-  } catch (error) {
-    console.error('Error in analyze route:', error)
+  } catch {
     return NextResponse.json(
       { error: 'ANALYSIS_ERROR', message: 'AI 분석 중 오류가 발생했습니다.' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

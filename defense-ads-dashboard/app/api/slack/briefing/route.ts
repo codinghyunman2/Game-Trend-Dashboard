@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NewsFetchResponse, UpcomingGame } from '@/types/news'
 import { FetchAdsResponse } from '@/types/ad'
-
-async function fetchUpcomingGamesData(): Promise<UpcomingGame[]> {
-  try {
-    const res = await fetch(`${getBaseUrl()}/api/upcoming-games`, { cache: 'no-store' })
-    if (!res.ok) return []
-    const data: { games: UpcomingGame[] } = await res.json()
-    return data.games ?? []
-  } catch (e) {
-    console.error('[slack/briefing] 출시 예정 게임 데이터 가져오기 실패:', e)
-    return []
-  }
-}
+import {
+  extractClientIp,
+  createRateLimiter,
+  safeCompareSecret,
+  auditLog,
+  validateSelfCallBaseUrl,
+} from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
+
+// 3 req/min per IP — this endpoint is cron-only in normal operation
+const rateLimiter = createRateLimiter(60_000, 3)
 
 const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -26,11 +24,42 @@ function formatDate(date: Date): string {
   return `${y}년 ${m}월 ${d}일 (${day})`
 }
 
+/**
+ * Build the base URL for internal self-calls.
+ * Validates each candidate against SSRF rules before use.
+ */
 function getBaseUrl(): string {
-  if (process.env.SITE_URL) return process.env.SITE_URL
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  const candidates = [
+    process.env.SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : null,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    // localhost only in development — validateSelfCallBaseUrl blocks it in production
+    process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null,
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate && validateSelfCallBaseUrl(candidate)) {
+      return candidate
+    }
+  }
+
+  // Should not reach here in production; indicates misconfiguration
+  console.error('[slack/briefing] No valid base URL found — check SITE_URL env var')
   return 'http://localhost:3000'
+}
+
+async function fetchUpcomingGamesData(): Promise<UpcomingGame[]> {
+  try {
+    const res = await fetch(`${getBaseUrl()}/api/upcoming-games`, { cache: 'no-store' })
+    if (!res.ok) return []
+    const data: { games: UpcomingGame[] } = await res.json()
+    return data.games ?? []
+  } catch (e) {
+    console.error('[slack/briefing] 출시 예정 게임 데이터 가져오기 실패:', e)
+    return []
+  }
 }
 
 async function fetchNewsData(): Promise<NewsFetchResponse | null> {
@@ -133,7 +162,6 @@ ${adsSection}`,
     if (!res.ok) return null
     const data = await res.json()
     const text = data.content?.[0]?.text?.trim() ?? null
-    // JSON 블록 마크다운 제거 (```json ... ``` 형태 대응)
     if (text) {
       const fenceMatch = text.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/)
       return fenceMatch ? fenceMatch[1].trim() : text
@@ -151,7 +179,8 @@ interface BriefingNewsItem {
   source: string
 }
 
-// Slack mrkdwn 특수문자 이스케이프 (LLM 출력 삽입 전 필수)
+// Slack mrkdwn special-character escaping (must be applied before inserting any
+// untrusted or LLM-generated text into Block Kit messages)
 function escapeSlackText(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
@@ -184,10 +213,26 @@ function parseBriefingLines(text: string): { news: BriefingNewsItem[]; adTrends:
   }
 }
 
-async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchResponse | null, upcomingGames: UpcomingGame[] = []): Promise<boolean> {
+async function sendSlackMessage(
+  briefingText: string,
+  _newsData?: NewsFetchResponse | null,
+  upcomingGames: UpcomingGame[] = [],
+): Promise<boolean> {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL
   if (!webhookUrl) {
     console.error('[slack/briefing] SLACK_WEBHOOK_URL 미설정')
+    return false
+  }
+
+  // Validate the webhook URL is actually a Slack endpoint
+  try {
+    const parsed = new URL(webhookUrl)
+    if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('slack.com')) {
+      console.error('[slack/briefing] SLACK_WEBHOOK_URL이 유효한 Slack 주소가 아닙니다')
+      return false
+    }
+  } catch {
+    console.error('[slack/briefing] SLACK_WEBHOOK_URL 파싱 실패')
     return false
   }
 
@@ -211,7 +256,6 @@ async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchRespo
 
   const adTrendLines = adTrends.map((t) => `• ${escapeSlackText(t)}`).join('\n')
 
-  // 출시 예정 게임 블록
   const upcomingBlock = upcomingGames.length > 0
     ? [{
         type: 'section',
@@ -239,17 +283,11 @@ async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchRespo
     },
     {
       type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `📰 *오늘의 주요 뉴스*\n${newsLines}`,
-      },
+      text: { type: 'mrkdwn', text: `📰 *오늘의 주요 뉴스*\n${newsLines}` },
     },
     {
       type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `🎮 *광고 트렌드*\n${adTrendLines}`,
-      },
+      text: { type: 'mrkdwn', text: `🎮 *광고 트렌드*\n${adTrendLines}` },
     },
     ...upcomingBlock,
     {
@@ -269,7 +307,7 @@ async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchRespo
     })
 
     if (!res.ok) {
-      console.error('[slack/briefing] 슬랙 발송 실패:', res.status, res.statusText)
+      console.error('[slack/briefing] 슬랙 발송 실패:', res.status)
       return false
     }
     return true
@@ -280,31 +318,62 @@ async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchRespo
 }
 
 export async function GET(request: NextRequest) {
-  const isTest = request.nextUrl.searchParams.get('test') === 'true'
-
-  // Vercel Cron 요청 검증 (test 모드 제외)
-  if (!isTest) {
-    const authHeader = request.headers.get('authorization')
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ success: false, message: '인증 실패' }, { status: 401 })
-    }
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const ip = extractClientIp(request.headers)
+  const rl = rateLimiter.check(ip)
+  if (!rl.allowed) {
+    auditLog('RATE_LIMIT', ip, '/api/slack/briefing')
+    return NextResponse.json(
+      { success: false, message: '너무 많은 요청입니다.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      },
+    )
   }
 
-  // 1. 뉴스 + 광고 + 출시 예정 게임 데이터 병렬 가져오기
-  const [newsData, adsData, upcomingGames] = await Promise.all([fetchNewsData(), fetchAdsData(), fetchUpcomingGamesData()])
+  // ── Cron authentication ────────────────────────────────────────────────────
+  // Test mode requires SLACK_TEST_MODE=true in env — disabled by default in production.
+  const testModeEnabled = process.env.SLACK_TEST_MODE === 'true'
+  const isTest = testModeEnabled && request.nextUrl.searchParams.get('test') === 'true'
+
+  if (!isTest) {
+    const cronSecret = process.env.CRON_SECRET ?? ''
+    if (!cronSecret) {
+      // Misconfiguration: no secret configured
+      console.error('[slack/briefing] CRON_SECRET 미설정 — 요청 거부')
+      auditLog('AUTH_FAILURE', ip, '/api/slack/briefing', 'CRON_SECRET_NOT_SET')
+      return NextResponse.json({ success: false, message: '인증 실패' }, { status: 401 })
+    }
+
+    const authHeader = request.headers.get('authorization') ?? ''
+    const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+
+    // Constant-time comparison prevents timing-based secret enumeration
+    if (!safeCompareSecret(provided, cronSecret)) {
+      auditLog('AUTH_FAILURE', ip, '/api/slack/briefing', 'INVALID_CRON_SECRET')
+      return NextResponse.json({ success: false, message: '인증 실패' }, { status: 401 })
+    }
+
+    auditLog('CRON_AUTH_SUCCESS', ip, '/api/slack/briefing')
+  }
+
+  // ── Fetch data & send briefing ─────────────────────────────────────────────
+  const [newsData, adsData, upcomingGames] = await Promise.all([
+    fetchNewsData(),
+    fetchAdsData(),
+    fetchUpcomingGamesData(),
+  ])
 
   if (!newsData || newsData.allNews.length === 0) {
-    console.log('[slack/briefing] 뉴스 데이터 없음 — 발송 스킵')
     return NextResponse.json({ success: false, message: '뉴스 데이터 없음' })
   }
 
-  // 2. Claude로 브리핑 생성
   const briefingText = await generateBriefing(newsData, adsData)
   if (!briefingText) {
     return NextResponse.json({ success: false, message: '브리핑 생성 실패' })
   }
 
-  // 3. 슬랙 발송
   const sent = await sendSlackMessage(briefingText, newsData, upcomingGames)
   if (!sent) {
     return NextResponse.json({ success: false, message: '슬랙 발송 실패' })

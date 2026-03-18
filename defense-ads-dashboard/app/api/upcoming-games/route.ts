@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { UpcomingGame } from '@/types/news'
 import { fetchUpcomingMobileGames } from '@/lib/igdb'
 import { getCache, setCache } from '@/lib/cache'
+import { extractClientIp, createRateLimiter, auditLog } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
 const CACHE_KEY = 'upcoming_games'
 const CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
+
+// 10 req/min per IP
+const rateLimiter = createRateLimiter(60_000, 10)
 
 interface UpcomingGamesCache {
   games: UpcomingGame[]
@@ -43,20 +47,17 @@ function extractPlatformsFromTitle(title: string): string[] {
 }
 
 function cleanGameTitle(title: string): string {
-  // "(PC/모바일/PS5)" 같은 플랫폼 표기 제거
   return title.replace(/\s*\([^)]+\)\s*$/, '').trim()
 }
 
 async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
   const now = new Date()
-  // UTC 기준 날짜 문자열 (YYYYMMDD) — setHours 로컬 타임 버그 방지
   const pad = (n: number) => String(n).padStart(2, '0')
   const todayStr = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}`
   const sevenDaysLater = new Date(now)
   sevenDaysLater.setUTCDate(now.getUTCDate() + 7)
   const sevenStr = `${sevenDaysLater.getUTCFullYear()}${pad(sevenDaysLater.getUTCMonth() + 1)}${pad(sevenDaysLater.getUTCDate())}`
 
-  // 이번 달 + (7일 이내에 다음 달 포함되면) 다음 달도 조회 (UTC 기준)
   const months: string[] = []
   const ym1 = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}`
   months.push(ym1)
@@ -71,7 +72,7 @@ async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
     try {
       const res = await fetch(
         `https://www.gamemeca.com/json.php?rts=json/index/gmdb_schedule&type=list&ym=${ym}`,
-        { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.gamemeca.com/game.php?rts=schedule' } }
+        { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.gamemeca.com/game.php?rts=schedule' } },
       )
       if (!res.ok) continue
 
@@ -79,10 +80,7 @@ async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
       if (!Array.isArray(data)) continue
 
       for (const g of data) {
-        // 모바일 플랫폼 필터 (platform array에 "178" 포함)
         if (!g.gm_platform_1st_array?.includes('178')) continue
-
-        // 날짜 필터: 오늘 ~ 7일 이내
         if (!g.symd || g.symd < todayStr || g.symd > sevenStr) continue
 
         const releaseDate = `${g.symd.slice(0, 4)}-${g.symd.slice(4, 6)}-${g.symd.slice(6, 8)}`
@@ -122,9 +120,8 @@ function isSimilarName(a: string, b: string): boolean {
 }
 
 function mergeGames(igdbGames: UpcomingGame[], gamemecaGames: UpcomingGame[]): UpcomingGame[] {
-  // gamemeca 우선: IGDB 게임 중 gamemeca와 이름 유사한 것 제거
   const filteredIgdb = igdbGames.filter(
-    (ig) => !gamemecaGames.some((gm) => isSimilarName(ig.name, gm.name) || isSimilarName(ig.nameKo, gm.nameKo))
+    (ig) => !gamemecaGames.some((gm) => isSimilarName(ig.name, gm.name) || isSimilarName(ig.nameKo, gm.nameKo)),
   )
   return [...gamemecaGames, ...filteredIgdb]
 }
@@ -133,7 +130,6 @@ function mergeGames(igdbGames: UpcomingGame[], gamemecaGames: UpcomingGame[]): U
 
 async function translateGameNames(games: UpcomingGame[]): Promise<UpcomingGame[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  // IGDB 게임만 번역 (gamemeca는 이미 한국어)
   const targets = games
     .map((g, i) => ({ idx: i, name: g.name, genres: g.genres, source: g.source }))
     .filter((t) => t.source === 'igdb')
@@ -200,7 +196,6 @@ ${JSON.stringify(input, null, 2)}`,
 function sortGames(games: UpcomingGame[]): UpcomingGame[] {
   return [...games].sort((a, b) => {
     if (a.releaseDate !== b.releaseDate) return a.releaseDate.localeCompare(b.releaseDate)
-    // 같은 날이면 gamemeca 먼저
     if (a.source === 'gamemeca' && b.source !== 'gamemeca') return -1
     if (b.source === 'gamemeca' && a.source !== 'gamemeca') return 1
     return 0
@@ -210,6 +205,20 @@ function sortGames(games: UpcomingGame[]): UpcomingGame[] {
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const ip = extractClientIp(request.headers)
+  const rl = rateLimiter.check(ip)
+  if (!rl.allowed) {
+    auditLog('RATE_LIMIT', ip, '/api/upcoming-games')
+    return NextResponse.json(
+      { error: 'RATE_LIMITED', message: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+      },
+    )
+  }
+
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
 
   if (!forceRefresh) {
@@ -232,11 +241,10 @@ export async function GET(request: NextRequest) {
 
     setCache<UpcomingGamesCache>(CACHE_KEY, { games, fetchedAt }, CACHE_TTL)
     return NextResponse.json({ games, fetchedAt })
-  } catch (error) {
-    console.error('[upcoming-games] 오류:', error)
+  } catch {
     return NextResponse.json(
-      { error: '출시 예정 게임 데이터를 가져오는 중 오류가 발생했습니다.', games: [], fetchedAt: new Date().toISOString() },
-      { status: 500 }
+      { error: 'FETCH_ERROR', games: [], fetchedAt: new Date().toISOString() },
+      { status: 500 },
     )
   }
 }
