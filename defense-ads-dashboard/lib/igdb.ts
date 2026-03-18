@@ -113,6 +113,7 @@ limit 20;`
   }
 
   const releaseDates: IGDBReleaseDate[] = await res.json()
+  console.log('[igdb] raw response:', JSON.stringify(releaseDates, null, 2))
 
   // 게임 ID 기준 중복 제거 + 플랫폼 병합
   const gameMap = new Map<number, {
@@ -124,8 +125,12 @@ limit 20;`
   for (const rd of releaseDates) {
     if (!rd.game || !rd.date) continue
 
-    const platformId = rd.platform?.id
-    const platformLabel = platformId === 34 ? 'iOS' : platformId === 39 ? 'Android' : (rd.platform?.name ?? '모바일')
+    // IGDB 실제 매핑: id=34 → Android, id=39 → iOS
+    // platform.name을 그대로 사용하여 오매핑 방지
+    const platformName = rd.platform?.name ?? '모바일'
+    const platformLabel = platformName === 'iOS' ? 'iOS'
+      : platformName === 'Android' ? 'Android'
+      : platformName
 
     const existing = gameMap.get(rd.game.id)
     if (existing) {
