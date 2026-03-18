@@ -30,6 +30,7 @@ export default function NewsHub() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [selectedChannel, setSelectedChannel] = useState<string>('')
   const hasInitializedChannel = useRef(false)
+  const [channelPages, setChannelPages] = useState<Record<string, number>>({})
   const [upcomingGames, setUpcomingGames] = useState<UpcomingGame[]>([])
   const [isUpcomingLoading, setIsUpcomingLoading] = useState(true)
 
@@ -175,6 +176,15 @@ export default function NewsHub() {
   const channels = newsData ? Object.keys(newsData.byChannel) : []
   const channelItems = newsData && selectedChannel ? newsData.byChannel[selectedChannel] ?? [] : []
 
+  const PAGE_SIZE = 5
+  const currentPage = channelPages[selectedChannel] ?? 1
+  const totalPages = Math.ceil(channelItems.length / PAGE_SIZE)
+  const pagedItems = channelItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function setPageForChannel(channel: string, page: number) {
+    setChannelPages(prev => ({ ...prev, [channel]: page }))
+  }
+
   return (
     <div className="min-h-screen bg-theme-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -265,11 +275,32 @@ export default function NewsHub() {
                       <p className="text-sm text-theme-secondary">이 채널의 최근 뉴스가 없습니다.</p>
                     </div>
                   ) : (
-                    channelItems.map((item, index) => (
+                    pagedItems.map((item, index) => (
                       <NewsListItem key={`${item.id}-${index}`} item={item} />
                     ))
                   )}
                 </div>
+                {totalPages > 1 && (
+                  <div className="mt-4 flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => setPageForChannel(selectedChannel, currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
+                    >
+                      이전
+                    </button>
+                    <span className="text-sm text-theme-secondary tabular-nums">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPageForChannel(selectedChannel, currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-theme-card border border-theme-border text-theme-secondary"
+                    >
+                      다음
+                    </button>
+                  </div>
+                )}
               </section>
             )}
           </>
