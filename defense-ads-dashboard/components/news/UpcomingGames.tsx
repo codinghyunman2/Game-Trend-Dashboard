@@ -7,23 +7,49 @@ interface Props {
   loading: boolean
 }
 
+const badgeBase = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '2px 8px',
+  borderRadius: '4px',
+  fontSize: '12px',
+  fontWeight: 500,
+  borderWidth: '1px',
+  borderStyle: 'solid',
+} as const
+
 function PlatformBadge({ platform }: { platform: string }) {
   if (platform === 'iOS') {
     return (
-      <span className="inline-flex items-center px-2 py-[2px] rounded text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/40">
+      <span style={{
+        ...badgeBase,
+        backgroundColor: 'var(--color-badge-info-bg)',
+        color: 'var(--color-badge-info-text)',
+        borderColor: 'var(--color-badge-info-border)',
+      }}>
         iOS
       </span>
     )
   }
   if (platform === 'Android') {
     return (
-      <span className="inline-flex items-center px-2 py-[2px] rounded text-xs font-medium bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700/40">
+      <span style={{
+        ...badgeBase,
+        backgroundColor: 'var(--color-badge-success-bg)',
+        color: 'var(--color-badge-success-text)',
+        borderColor: 'var(--color-badge-success-border)',
+      }}>
         Android
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center px-2 py-[2px] rounded text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800/60 dark:text-gray-400 dark:border-gray-700/40">
+    <span style={{
+      ...badgeBase,
+      backgroundColor: 'var(--color-badge-secondary-bg)',
+      color: 'var(--color-badge-secondary-text)',
+      borderColor: 'var(--color-badge-secondary-border)',
+    }}>
       {platform}
     </span>
   )
@@ -31,7 +57,13 @@ function PlatformBadge({ platform }: { platform: string }) {
 
 function GenreBadge({ genre }: { genre: string }) {
   return (
-    <span className="inline-flex items-center px-2 py-[2px] rounded text-xs bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800/60 dark:text-gray-400 dark:border-gray-700/40">
+    <span style={{
+      ...badgeBase,
+      fontWeight: 400,
+      backgroundColor: 'var(--color-badge-secondary-bg)',
+      color: 'var(--color-badge-secondary-text)',
+      borderColor: 'var(--color-badge-secondary-border)',
+    }}>
       {genre}
     </span>
   )

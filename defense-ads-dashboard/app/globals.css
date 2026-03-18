@@ -16,6 +16,18 @@
   --color-accent-hover: #cc2e44;
   --color-accent-soft: rgba(229, 56, 79, 0.08);
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  /* 배지 — info (iOS) */
+  --color-badge-info-bg: rgba(59, 130, 246, 0.07);
+  --color-badge-info-text: #1e40af;
+  --color-badge-info-border: rgba(59, 130, 246, 0.22);
+  /* 배지 — success (Android) */
+  --color-badge-success-bg: rgba(34, 197, 94, 0.07);
+  --color-badge-success-text: #166534;
+  --color-badge-success-border: rgba(34, 197, 94, 0.22);
+  /* 배지 — secondary (장르) */
+  --color-badge-secondary-bg: rgba(0, 0, 0, 0.04);
+  --color-badge-secondary-text: #555555;
+  --color-badge-secondary-border: #e8e8e8;
 }
 
 .dark {
@@ -29,6 +41,18 @@
   --color-accent-hover: #cc2e44;
   --color-accent-soft: rgba(229, 56, 79, 0.12);
   --card-shadow: none;
+  /* 배지 — info (iOS) */
+  --color-badge-info-bg: rgba(59, 130, 246, 0.12);
+  --color-badge-info-text: #93c5fd;
+  --color-badge-info-border: rgba(59, 130, 246, 0.28);
+  /* 배지 — success (Android) */
+  --color-badge-success-bg: rgba(34, 197, 94, 0.10);
+  --color-badge-success-text: #86efac;
+  --color-badge-success-border: rgba(34, 197, 94, 0.25);
+  /* 배지 — secondary (장르) */
+  --color-badge-secondary-bg: rgba(255, 255, 255, 0.06);
+  --color-badge-secondary-text: #888888;
+  --color-badge-secondary-border: rgba(255, 255, 255, 0.08);
 }
 
 body {
