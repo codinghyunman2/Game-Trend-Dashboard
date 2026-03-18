@@ -44,8 +44,6 @@ export interface UpcomingGame {
 
 export interface NewsFetchResponse {
   allNews: NewsItem[];
-  defenseTop3: NewsItem[];
-  mobileTop3: NewsItem[];
   byChannel: { [sourceKey: string]: NewsItem[] };
   fetchedAt: string;
   cachedAt?: string;

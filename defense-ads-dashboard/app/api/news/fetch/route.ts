@@ -131,57 +131,6 @@ async function fetchRSSFeed(source: RSSSource): Promise<FetchResult> {
   }
 }
 
-async function batchSummarizeTop3(items: NewsItem[]): Promise<void> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || items.length === 0) return
-
-  const input = items.map((item, i) => ({
-    idx: i,
-    title: item.title,
-    summary: item.summary,
-  }))
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages: [{
-          role: 'user',
-          content: `이 게임 뉴스의 핵심 내용, 중요한 이유, 업계 의미를 각각 한 문장씩 총 3문장 한국어로 요약. 각 문장은 줄바꿈으로 구분. 비한국어 제목은 한국어로 번역. JSON만 반환: [{ "idx": 번호, "titleKo": "...", "summaryKo": "줄1\\n줄2\\n줄3" }]
-
-뉴스 목록:
-${JSON.stringify(input, null, 2)}
-
-JSON 배열만 출력. 마크다운 코드 블록 없이 순수 JSON만.`,
-        }],
-      }),
-    })
-
-    if (!res.ok) return
-
-    const data = await res.json()
-    const responseText = data.content?.[0]?.text ?? ''
-    const cleaned = responseText.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
-    const results: { idx: number; titleKo: string; summaryKo: string }[] = JSON.parse(cleaned)
-
-    for (const r of results) {
-      if (r.idx >= 0 && r.idx < items.length) {
-        items[r.idx].titleKo = r.titleKo
-        items[r.idx].summaryKo = r.summaryKo
-      }
-    }
-  } catch {
-    // Keep originals on failure
-  }
-}
-
 async function batchTranslate(items: NewsItem[]): Promise<NewsItem[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey || items.length === 0) return items
@@ -296,16 +245,9 @@ export async function GET(request: NextRequest) {
     // Sort by date descending
     allNews.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
 
-    // Category tops (번역 전 선별)
-    const defenseTop3 = allNews.filter((n) => n.category === 'defense').slice(0, 3)
-    const mobileTop3 = allNews.filter((n) => n.category === 'mobile').slice(0, 3)
+    // 번역 대상: allNews 상위 10개 중 비한국어
+    const translateCandidateIds = new Set<string>(allNews.slice(0, 10).map((n) => n.id))
 
-    // 번역 대상: defenseTop3 + mobileTop3 + allNews 상위 10개 중 비한국어만 (최대 16개)
-    const translateCandidateIds = new Set<string>([
-      ...defenseTop3.map((n) => n.id),
-      ...mobileTop3.map((n) => n.id),
-      ...allNews.slice(0, 10).map((n) => n.id),
-    ])
     // Group by channel (RSS_SOURCES 순서로 초기화하여 탭 순서 고정)
     const byChannel: Record<string, NewsItem[]> = {}
     for (const source of RSS_SOURCES) {
@@ -321,8 +263,6 @@ export async function GET(request: NextRequest) {
 
     const responseData: NewsFetchResponse = {
       allNews,
-      defenseTop3,
-      mobileTop3,
       byChannel,
       fetchedAt: new Date().toISOString(),
     }
@@ -331,25 +271,15 @@ export async function GET(request: NextRequest) {
     setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
     const response = NextResponse.json({ ...responseData, cachedAt })
 
-    // 번역/요약은 백그라운드에서 실행 → 다음 캐시 요청부터 번역된 데이터 제공
-    const top3Ids = new Set<string>([...defenseTop3.map((n) => n.id), ...mobileTop3.map((n) => n.id)])
-    const top3Items = [...defenseTop3, ...mobileTop3]
-    const toTranslate = allNews.filter((n) => !n.isKorean && translateCandidateIds.has(n.id) && !top3Ids.has(n.id))
+    // 번역은 백그라운드에서 실행 → 다음 캐시 요청부터 번역된 데이터 제공
+    const toTranslate = allNews.filter((n) => !n.isKorean && translateCandidateIds.has(n.id))
 
-    const bgTasks: Promise<unknown>[] = []
-    if (top3Items.length > 0) {
-      console.log(`[요약] 백그라운드 Top3 요약 시작 (${top3Items.length}개)`)
-      bgTasks.push(batchSummarizeTop3(top3Items))
-    }
     if (toTranslate.length > 0) {
       console.log(`[번역] 백그라운드 번역 시작 (${toTranslate.length}개)`)
-      bgTasks.push(batchTranslate(toTranslate))
-    }
-    if (bgTasks.length > 0) {
-      Promise.all(bgTasks).then(() => {
+      batchTranslate(toTranslate).then(() => {
         setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
-        console.log('[번역/요약] 완료 — 캐시 업데이트')
-      }).catch((e) => console.warn('[번역/요약] 실패:', e))
+        console.log('[번역] 완료 — 캐시 업데이트')
+      }).catch((e) => console.warn('[번역] 실패:', e))
     }
 
     return response

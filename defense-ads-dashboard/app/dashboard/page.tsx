@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { NewsItem, AnalyzedNews, NewsFetchResponse, NewsCacheEntry, UpcomingGame } from '@/types/news'
 import NewsTop5 from '@/components/news/NewsTop5'
-import NewsCard from '@/components/news/NewsCard'
 import ChannelTabs from '@/components/news/ChannelTabs'
 import NewsListItem from '@/components/news/NewsListItem'
 import UpcomingGames from '@/components/news/UpcomingGames'
@@ -231,30 +230,6 @@ export default function NewsHub() {
               </div>
               <NewsTop5 items={analyzedTop5} loading={isAnalyzing} />
             </section>
-
-            {/* Defense Top 3 */}
-            {newsData.defenseTop3.length > 0 && (
-              <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4 text-theme-text">디펜스 장르 Top 3</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {newsData.defenseTop3.map((item, index) => (
-                    <NewsCard key={`${item.id}-${index}`} item={item} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Mobile Top 3 */}
-            {newsData.mobileTop3.length > 0 && (
-              <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4 text-theme-text">모바일 플랫폼 Top 3</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {newsData.mobileTop3.map((item, index) => (
-                    <NewsCard key={`${item.id}-${index}`} item={item} />
-                  ))}
-                </div>
-              </section>
-            )}
 
             {/* Channel Browse */}
             {channels.length > 0 && (
