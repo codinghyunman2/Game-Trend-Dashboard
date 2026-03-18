@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import NavBar from '@/components/NavBar'
+import { ScrollToTop } from '@/components/ScrollToTop'
 
 export const metadata: Metadata = {
   title: '2026 게임 트렌드',
@@ -34,6 +35,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}` }} />
       </head>
       <body>
+        <ScrollToTop />
         <NavBar />
         {children}
       </body>
