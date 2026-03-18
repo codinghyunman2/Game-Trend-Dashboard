@@ -225,7 +225,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `👉 전체 보기: https://game-trend-dashboard.vercel.app/dashboard`,
+        text: `👉 <https://game-trend-dashboard.vercel.app/dashboard|전체 보기>`,
       },
     },
   ]
