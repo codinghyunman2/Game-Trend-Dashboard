@@ -221,8 +221,8 @@ async function sendSlackMessage(briefingText: string, _newsData?: NewsFetchRespo
             const name = escapeSlackText(g.nameKo || g.name)
             const platform = g.platform.join('/')
             const date = g.releaseDateLabel ? ` · ${g.releaseDateLabel}` : ''
-            return g.igdbLink && isValidHttpsUrl(g.igdbLink)
-              ? `• <${g.igdbLink}|${name}> — ${platform}${date}`
+            return g.link && isValidHttpsUrl(g.link)
+              ? `• <${g.link}|${name}> — ${platform}${date}`
               : `• ${name} — ${platform}${date}`
           }).join('\n')}`,
         },

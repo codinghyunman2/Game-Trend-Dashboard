@@ -13,11 +13,139 @@ interface UpcomingGamesCache {
   fetchedAt: string
 }
 
+// ─── 게임메카 ────────────────────────────────────────────────────────────────
+
+interface GamemecaGame {
+  gmid: string
+  gm_platform_1st: string
+  gm_platform_1st_array: string[]
+  title: string
+  symd: string   // YYYYMMDD
+  period: string // YYYY.MM.DD
+  seq: number
+}
+
+function formatDateLabel(releaseDate: string): string {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const release = new Date(releaseDate)
+  release.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((release.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays === 0) return '오늘'
+  if (diffDays === 1) return '내일'
+  if (diffDays > 1) return `${diffDays}일 후`
+  const m = release.getMonth() + 1
+  const d = release.getDate()
+  return `${m}월 ${d}일`
+}
+
+function extractPlatformsFromTitle(title: string): string[] {
+  const platforms: string[] = []
+  if (/iOS|아이폰|아이패드/i.test(title)) platforms.push('iOS')
+  if (/Android|안드로이드/i.test(title)) platforms.push('Android')
+  return platforms.length > 0 ? platforms : ['모바일']
+}
+
+function cleanGameTitle(title: string): string {
+  // "(PC/모바일/PS5)" 같은 플랫폼 표기 제거
+  return title.replace(/\s*\([^)]+\)\s*$/, '').trim()
+}
+
+async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
+  const now = new Date()
+  // UTC 기준 날짜 문자열 (YYYYMMDD) — setHours 로컬 타임 버그 방지
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayStr = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}`
+  const sevenDaysLater = new Date(now)
+  sevenDaysLater.setUTCDate(now.getUTCDate() + 7)
+  const sevenStr = `${sevenDaysLater.getUTCFullYear()}${pad(sevenDaysLater.getUTCMonth() + 1)}${pad(sevenDaysLater.getUTCDate())}`
+
+  // 이번 달 + (7일 이내에 다음 달 포함되면) 다음 달도 조회 (UTC 기준)
+  const months: string[] = []
+  const ym1 = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}`
+  months.push(ym1)
+  if (sevenDaysLater.getUTCMonth() !== now.getUTCMonth()) {
+    const ym2 = `${sevenDaysLater.getUTCFullYear()}${pad(sevenDaysLater.getUTCMonth() + 1)}`
+    months.push(ym2)
+  }
+
+  const games: UpcomingGame[] = []
+
+  for (const ym of months) {
+    try {
+      const res = await fetch(
+        `https://www.gamemeca.com/json.php?rts=json/index/gmdb_schedule&type=list&ym=${ym}`,
+        { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.gamemeca.com/game.php?rts=schedule' } }
+      )
+      if (!res.ok) continue
+
+      const data: GamemecaGame[] | null = await res.json()
+      if (!Array.isArray(data)) continue
+
+      for (const g of data) {
+        // 모바일 플랫폼 필터 (platform array에 "178" 포함)
+        if (!g.gm_platform_1st_array?.includes('178')) continue
+
+        // 날짜 필터: 오늘 ~ 7일 이내
+        if (!g.symd || g.symd < todayStr || g.symd > sevenStr) continue
+
+        const releaseDate = `${g.symd.slice(0, 4)}-${g.symd.slice(4, 6)}-${g.symd.slice(6, 8)}`
+        const name = cleanGameTitle(g.title)
+
+        games.push({
+          id: g.gmid,
+          name,
+          nameKo: name,
+          coverUrl: null,
+          genres: [],
+          releaseDate,
+          releaseDateLabel: formatDateLabel(releaseDate),
+          platform: extractPlatformsFromTitle(g.title),
+          link: `https://www.gamemeca.com/game.php?gmid=${g.gmid}`,
+          source: 'gamemeca',
+        })
+      }
+    } catch (e) {
+      console.error(`[upcoming-games] 게임메카 ${ym} 파싱 오류:`, e)
+    }
+  }
+
+  return games
+}
+
+// ─── 중복 제거 ────────────────────────────────────────────────────────────────
+
+function normalizeName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9가-힣]/g, '')
+}
+
+function isSimilarName(a: string, b: string): boolean {
+  const na = normalizeName(a)
+  const nb = normalizeName(b)
+  if (!na || !nb) return false
+  return na.includes(nb) || nb.includes(na)
+}
+
+function mergeGames(igdbGames: UpcomingGame[], gamemecaGames: UpcomingGame[]): UpcomingGame[] {
+  // gamemeca 우선: IGDB 게임 중 gamemeca와 이름 유사한 것 제거
+  const filteredIgdb = igdbGames.filter(
+    (ig) => !gamemecaGames.some((gm) => isSimilarName(ig.name, gm.name) || isSimilarName(ig.nameKo, gm.nameKo))
+  )
+  return [...gamemecaGames, ...filteredIgdb]
+}
+
+// ─── 번역 ─────────────────────────────────────────────────────────────────────
+
 async function translateGameNames(games: UpcomingGame[]): Promise<UpcomingGame[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || games.length === 0) return games
+  // IGDB 게임만 번역 (gamemeca는 이미 한국어)
+  const targets = games
+    .map((g, i) => ({ idx: i, name: g.name, genres: g.genres, source: g.source }))
+    .filter((t) => t.source === 'igdb')
 
-  const toTranslate = games.map((g, i) => ({ idx: i, name: g.name }))
+  if (!apiKey || targets.length === 0) return games
+
+  const input = targets.map(({ idx, name, genres }) => ({ idx, name, genres }))
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -32,12 +160,20 @@ async function translateGameNames(games: UpcomingGame[]): Promise<UpcomingGame[]
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: `다음 게임 이름을 한국어로 번역해주세요. 고유명사나 브랜드명은 원문을 유지하되, 일반 영어 단어로 구성된 제목은 자연스러운 한국어로 번역해주세요.
-JSON 배열로만 응답하세요 (다른 텍스트 없이):
-[{ "idx": 0, "nameKo": "번역된 이름" }, ...]
+          content: `다음 모바일 게임 이름과 장르를 한국어로 번역해줘.
 
-번역할 게임 목록:
-${JSON.stringify(toTranslate, null, 2)}`,
+규칙:
+- 고유명사(게임 제목)는 한국 게임 커뮤니티에서 통용되는 한국어 표기로 번역 (예: Fortnite → 포트나이트)
+- 공식 한국어 제목이 있으면 그것을 우선 사용
+- 직역보다 자연스러운 한국어 표현 사용
+- 장르명도 한국 게임 커뮤니티 통용 표현으로 번역 (예: Battle Royale → 배틀로얄, RPG → RPG 그대로)
+- 번역 불필요하면 원문 그대로 반환
+
+JSON 배열만 반환 (다른 텍스트 없이):
+[{ "idx": 0, "nameKo": "한국어 게임명", "genresKo": ["장르1", "장르2"] }]
+
+원문:
+${JSON.stringify(input, null, 2)}`,
         }],
       }),
     })
@@ -46,12 +182,16 @@ ${JSON.stringify(toTranslate, null, 2)}`,
 
     const data = await res.json()
     const text = (data.content?.[0]?.text ?? '').replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
-    const translations: { idx: number; nameKo: string }[] = JSON.parse(text)
+    const translations: { idx: number; nameKo: string; genresKo: string[] }[] = JSON.parse(text)
 
     const translated = [...games]
     for (const t of translations) {
       if (t.idx >= 0 && t.idx < translated.length) {
-        translated[t.idx] = { ...translated[t.idx], nameKo: t.nameKo }
+        translated[t.idx] = {
+          ...translated[t.idx],
+          nameKo: t.nameKo ?? translated[t.idx].nameKo,
+          genres: t.genresKo?.length ? t.genresKo : translated[t.idx].genres,
+        }
       }
     }
     return translated
@@ -59,6 +199,20 @@ ${JSON.stringify(toTranslate, null, 2)}`,
     return games
   }
 }
+
+// ─── 정렬 ─────────────────────────────────────────────────────────────────────
+
+function sortGames(games: UpcomingGame[]): UpcomingGame[] {
+  return [...games].sort((a, b) => {
+    if (a.releaseDate !== b.releaseDate) return a.releaseDate.localeCompare(b.releaseDate)
+    // 같은 날이면 gamemeca 먼저
+    if (a.source === 'gamemeca' && b.source !== 'gamemeca') return -1
+    if (b.source === 'gamemeca' && a.source !== 'gamemeca') return 1
+    return 0
+  })
+}
+
+// ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
@@ -71,8 +225,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const rawGames = await fetchUpcomingMobileGames()
-    const games = await translateGameNames(rawGames)
+    const [igdbRaw, gamemecaGames] = await Promise.all([
+      fetchUpcomingMobileGames(),
+      fetchGamemecaGames(),
+    ])
+
+    const merged = mergeGames(igdbRaw, gamemecaGames)
+    const translated = await translateGameNames(merged)
+    const games = sortGames(translated)
     const fetchedAt = new Date().toISOString()
 
     setCache<UpcomingGamesCache>(CACHE_KEY, { games, fetchedAt }, CACHE_TTL)
@@ -80,7 +240,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[upcoming-games] 오류:', error)
     return NextResponse.json(
-      { error: 'IGDB 데이터를 가져오는 중 오류가 발생했습니다.', games: [], fetchedAt: new Date().toISOString() },
+      { error: '출시 예정 게임 데이터를 가져오는 중 오류가 발생했습니다.', games: [], fetchedAt: new Date().toISOString() },
       { status: 500 }
     )
   }

@@ -38,6 +38,21 @@ function GenreBadge({ genre }: { genre: string }) {
   )
 }
 
+function SourceBadge({ source }: { source: 'igdb' | 'gamemeca' }) {
+  if (source === 'gamemeca') {
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-900/30 text-orange-300 border border-orange-700/30">
+        게임메카
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-800/60 text-gray-400 border border-gray-700/30">
+      IGDB
+    </span>
+  )
+}
+
 function SkeletonRow() {
   return (
     <div className="flex items-center gap-3 px-4 py-3 animate-pulse">
@@ -113,14 +128,17 @@ export default function UpcomingGames({ games, loading }: Props) {
                   ))}
                 </div>
                 <span className="text-theme-secondary text-xs">{game.releaseDateLabel} 출시</span>
-                <a
-                  href={game.igdbLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors ml-auto"
-                >
-                  IGDB 보기 →
-                </a>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <SourceBadge source={game.source} />
+                  <a
+                    href={game.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    {game.source === 'gamemeca' ? '게임메카 보기 →' : 'IGDB 보기 →'}
+                  </a>
+                </div>
               </div>
             </div>
           </div>

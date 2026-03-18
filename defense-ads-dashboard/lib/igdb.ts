@@ -158,7 +158,8 @@ limit 20;`
     releaseDate: formatReleaseDateISO(releaseDateTs),
     releaseDateLabel: formatReleaseDateLabel(releaseDateTs),
     platform: platforms,
-    igdbLink: `https://www.igdb.com/games/${game.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+    link: `https://www.igdb.com/games/${game.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+    source: 'igdb' as const,
   }))
 
   games.sort((a, b) => a.releaseDate.localeCompare(b.releaseDate))

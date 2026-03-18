@@ -39,7 +39,8 @@ export interface UpcomingGame {
   releaseDate: string;       // YYYY-MM-DD
   releaseDateLabel: string;  // "오늘", "내일", "N일 후", "3월 20일"
   platform: string[];        // ["iOS", "Android"]
-  igdbLink: string;
+  link: string;              // IGDB 또는 게임메카 링크
+  source: 'igdb' | 'gamemeca';
 }
 
 export interface NewsFetchResponse {
