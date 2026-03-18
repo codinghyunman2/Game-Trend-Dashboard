@@ -9,6 +9,7 @@ import KeywordManager from '@/components/KeywordManager'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
+const ANALYSIS_CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
 
 type TabId = 'summary' | 'KR' | 'US' | 'JP' | 'TW'
 
@@ -167,8 +168,30 @@ function DashboardContent() {
     return `ads_cache_v3_${[...kws].sort().join(',')}`
   }, [])
 
-  const fetchAnalysis = useCallback(async (topAds: MetaAd[], forceRefresh = false) => {
+  const getAnalysisCacheKey = useCallback((kws: string[]) => {
+    return `ads_analysis_cache_${[...kws].sort().join(',')}`
+  }, [])
+
+  const fetchAnalysis = useCallback(async (topAds: MetaAd[], kws: string[], forceRefresh = false) => {
     if (topAds.length === 0) return
+
+    const analysisCacheKey = getAnalysisCacheKey(kws)
+
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(analysisCacheKey)
+        if (cached) {
+          const entry: { data: AdAnalysis[]; timestamp: number } = JSON.parse(cached)
+          if (Date.now() - entry.timestamp < ANALYSIS_CACHE_TTL) {
+            setAnalyses(entry.data)
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Analysis cache read failed:', e)
+      }
+    }
+
     setIsAnalyzing(true)
     try {
       const url = forceRefresh ? '/api/analyze?refresh=true' : '/api/analyze'
@@ -180,13 +203,18 @@ function DashboardContent() {
       if (res.ok) {
         const data: AdAnalysis[] = await res.json()
         setAnalyses(data)
+        try {
+          sessionStorage.setItem(analysisCacheKey, JSON.stringify({ data, timestamp: Date.now() }))
+        } catch (e) {
+          console.warn('Analysis cache write failed:', e)
+        }
       }
     } catch {
       // Analysis failure is non-critical
     } finally {
       setIsAnalyzing(false)
     }
-  }, [])
+  }, [getAnalysisCacheKey])
 
   const fetchAds = useCallback(async (kws: string[], forceRefresh = false) => {
     // Cancel any in-flight request before starting a new one
@@ -209,7 +237,7 @@ function DashboardContent() {
             setAds(entry.data.ads)
             setLastUpdated(new Date(entry.data.cachedAt || entry.timestamp))
             setIsLoading(false)
-            fetchAnalysis(entry.data.ads)
+            fetchAnalysis(entry.data.ads, kws)
             return
           }
         }
@@ -248,7 +276,7 @@ function DashboardContent() {
       }
 
       setIsLoading(false)
-      fetchAnalysis(response.ads, forceRefresh)
+      fetchAnalysis(response.ads, kws, forceRefresh)
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return
       setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')

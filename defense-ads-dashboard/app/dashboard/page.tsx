@@ -209,6 +209,14 @@ export default function NewsHub() {
           </div>
         ) : newsData && (
           <>
+            {/* Upcoming Games */}
+            {(isUpcomingLoading || upcomingGames.length > 0) && (
+              <section className="mb-10">
+                <h2 className="text-lg font-semibold mb-4 text-theme-text">이번 주 출시 예정 게임</h2>
+                <UpcomingGames games={upcomingGames} loading={isUpcomingLoading} />
+              </section>
+            )}
+
             {/* AI Top 5 */}
             <section className="mb-10">
               <div className="flex items-center justify-between mb-4">
@@ -223,14 +231,6 @@ export default function NewsHub() {
               </div>
               <NewsTop5 items={analyzedTop5} loading={isAnalyzing} />
             </section>
-
-            {/* Upcoming Games */}
-            {(isUpcomingLoading || upcomingGames.length > 0) && (
-              <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4 text-theme-text">이번 주 출시 예정 게임</h2>
-                <UpcomingGames games={upcomingGames} loading={isUpcomingLoading} />
-              </section>
-            )}
 
             {/* Defense Top 3 */}
             {newsData.defenseTop3.length > 0 && (

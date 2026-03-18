@@ -32,9 +32,13 @@ export default function NewsCard({ item }: { item: NewsItem }) {
       <h3 className="text-sm font-semibold leading-snug mb-2 line-clamp-2 text-theme-text">
         {item.titleKo || item.title}
       </h3>
-      <p className="text-xs leading-relaxed mb-3 line-clamp-1 text-theme-secondary">
-        {item.summaryKo || item.summary}
-      </p>
+      <div className="mb-3 space-y-0.5">
+        {(item.summaryKo || item.summary).split('\n').map((line, i) => (
+          <p key={i} className="leading-relaxed text-theme-secondary" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+            · {line}
+          </p>
+        ))}
+      </div>
       <a
         href={item.link}
         target="_blank"

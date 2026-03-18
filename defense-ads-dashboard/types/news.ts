@@ -24,7 +24,7 @@ export interface NewsAnalysisItem {
 export interface AnalyzedNews {
   rank: number;
   titleKo: string;
-  summaryKo: string;
+  summaryKo: string; // 3문장, 줄바꿈(\n)으로 구분: 왜 중요한지 / 핵심 내용 / 업계 의미
   source: string;
   link: string;
   pubDate: string;

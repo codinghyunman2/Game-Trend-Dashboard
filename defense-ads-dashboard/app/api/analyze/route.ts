@@ -96,9 +96,11 @@ export async function POST(request: NextRequest) {
     if (!forceRefresh) {
       const cached = getCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY)
       if (cached) {
+        console.log('[cache hit] ads_analysis')
         return NextResponse.json(cached.analyses)
       }
     }
+    console.log('[cache miss] ads_analysis')
 
     const topAds = (ads as MetaAd[]).slice(0, 5)
 

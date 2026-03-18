@@ -52,12 +52,17 @@ export async function POST(request: NextRequest) {
 뉴스 목록:
 ${JSON.stringify(newsInput, null, 2)}
 
+summaryKo 필드는 반드시 3문장으로 작성하고 각 문장은 줄바꿈(\\n)으로 구분하세요:
+1문장: 이 뉴스가 왜 중요한지
+2문장: 핵심 내용이 무엇인지
+3문장: 게임 업계에 어떤 의미인지
+
 다음 JSON 배열 형식으로 응답해주세요. 마크다운 코드 블록 없이 순수 JSON만 출력해주세요:
 [
   {
     "rank": 1,
     "titleKo": "한국어 제목",
-    "summaryKo": "한국어로 된 1-2문장 핵심 요약 (업계 시사점 포함)",
+    "summaryKo": "이 뉴스가 왜 중요한지 한 문장\n핵심 내용이 무엇인지 한 문장\n게임 업계에 어떤 의미인지 한 문장",
     "source": "출처명",
     "link": "원문 링크",
     "pubDate": "ISO 날짜"
