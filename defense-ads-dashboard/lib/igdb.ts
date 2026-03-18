@@ -43,30 +43,18 @@ async function getAccessToken(): Promise<string> {
   return tokenCache.accessToken
 }
 
+const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
+
 function formatReleaseDateLabel(unixTimestamp: number): string {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
   const releaseDate = new Date(unixTimestamp * 1000)
-  releaseDate.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((releaseDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return '오늘'
-  if (diffDays === 1) return '내일'
-  if (diffDays > 1) return `${diffDays}일 후`
-
   const m = releaseDate.getMonth() + 1
   const d = releaseDate.getDate()
-  return `${m}월 ${d}일`
+  const day = DAY_NAMES[releaseDate.getDay()]
+  return `${m}/${d}(${day})`
 }
 
 function formatReleaseDateISO(unixTimestamp: number): string {
   return new Date(unixTimestamp * 1000).toISOString().slice(0, 10)
-}
-
-function normalizeIgdbCoverUrl(url: string | null | undefined): string | null {
-  if (!url) return null
-  const normalized = url.startsWith('//') ? `https:${url}` : url
-  return normalized.replace('/t_thumb/', '/t_cover_big/')
 }
 
 interface IGDBReleaseDate {
@@ -76,7 +64,6 @@ interface IGDBReleaseDate {
   game: {
     id: number
     name: string
-    cover?: { url: string }
     genres?: { name: string }[]
     summary?: string
   }
@@ -91,7 +78,7 @@ export async function fetchUpcomingMobileGames(): Promise<UpcomingGame[]> {
   const now = Math.floor(Date.now() / 1000)
   const sevenDaysLater = now + 7 * 24 * 60 * 60
 
-  const body = `fields game.name, game.cover.url, game.genres.name, game.summary, date, platform.name;
+  const body = `fields game.name, game.genres.name, game.summary, date, platform.name;
 where platform = (34, 39)
 & date >= ${now}
 & date <= ${sevenDaysLater};
@@ -153,7 +140,6 @@ limit 20;`
     id: String(game.id),
     name: game.name,
     nameKo: game.name,
-    coverUrl: normalizeIgdbCoverUrl(game.cover?.url ?? null),
     genres: (game.genres ?? []).map((g) => g.name).slice(0, 3),
     releaseDate: formatReleaseDateISO(releaseDateTs),
     releaseDateLabel: formatReleaseDateLabel(releaseDateTs),

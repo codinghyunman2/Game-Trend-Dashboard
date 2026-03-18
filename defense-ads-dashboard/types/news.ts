@@ -34,10 +34,9 @@ export interface UpcomingGame {
   id: string;
   name: string;
   nameKo: string;
-  coverUrl: string | null;
   genres: string[];
   releaseDate: string;       // YYYY-MM-DD
-  releaseDateLabel: string;  // "오늘", "내일", "N일 후", "3월 20일"
+  releaseDateLabel: string;  // "M/D(요일)" 형식
   platform: string[];        // ["iOS", "Android"]
   link: string;              // IGDB 또는 게임메카 링크
   source: 'igdb' | 'gamemeca';

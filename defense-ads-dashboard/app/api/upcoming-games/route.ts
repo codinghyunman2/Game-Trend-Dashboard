@@ -25,18 +25,14 @@ interface GamemecaGame {
   seq: number
 }
 
+const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
+
 function formatDateLabel(releaseDate: string): string {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
   const release = new Date(releaseDate)
-  release.setHours(0, 0, 0, 0)
-  const diffDays = Math.round((release.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  if (diffDays === 0) return '오늘'
-  if (diffDays === 1) return '내일'
-  if (diffDays > 1) return `${diffDays}일 후`
   const m = release.getMonth() + 1
   const d = release.getDate()
-  return `${m}월 ${d}일`
+  const day = DAY_NAMES[release.getDay()]
+  return `${m}/${d}(${day})`
 }
 
 function extractPlatformsFromTitle(title: string): string[] {
@@ -96,7 +92,6 @@ async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
           id: g.gmid,
           name,
           nameKo: name,
-          coverUrl: null,
           genres: [],
           releaseDate,
           releaseDateLabel: formatDateLabel(releaseDate),
