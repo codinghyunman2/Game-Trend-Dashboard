@@ -234,7 +234,7 @@ async function sendSlackMessage(briefingText: string): Promise<boolean> {
     const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ blocks }),
+      body: JSON.stringify({ blocks, unfurl_links: false, unfurl_media: false }),
     })
 
     if (!res.ok) {
