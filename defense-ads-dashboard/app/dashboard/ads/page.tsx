@@ -363,7 +363,7 @@ function DashboardContent() {
             한국 광고 보기
           </a>
           <p className="text-sm text-theme-secondary">
-            Meta 광고 라이브러리에서 한국 타겟 디펜스 게임 광고를 확인하세요
+            Meta 라이브러리에서 한국 디펜스 게임 광고를 확인하세요
           </p>
         </section>
 

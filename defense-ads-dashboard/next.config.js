@@ -11,9 +11,9 @@
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: https://images.igdb.com https://www.gamemeca.com",
-  "font-src 'self'",
+  "font-src 'self' https://cdn.jsdelivr.net",
   "connect-src 'self'",
   "frame-src 'none'",
   "frame-ancestors 'none'",

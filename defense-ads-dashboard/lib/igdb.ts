@@ -99,8 +99,12 @@ limit 20;`
     throw new Error(`IGDB API 요청 실패: ${res.status}`)
   }
 
-  const releaseDates: IGDBReleaseDate[] = await res.json()
-  console.log('[igdb] raw response:', JSON.stringify(releaseDates, null, 2))
+  const responseData = await res.json()
+  console.log('[igdb] raw response:', JSON.stringify(responseData, null, 2))
+  if (!Array.isArray(responseData)) {
+    throw new Error(`IGDB API 응답이 배열이 아님: ${JSON.stringify(responseData)}`)
+  }
+  const releaseDates: IGDBReleaseDate[] = responseData
 
   // 게임 ID 기준 중복 제거 + 플랫폼 병합
   const gameMap = new Map<number, {

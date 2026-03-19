@@ -241,7 +241,8 @@ export async function GET(request: NextRequest) {
 
     setCache<UpcomingGamesCache>(CACHE_KEY, { games, fetchedAt }, CACHE_TTL)
     return NextResponse.json({ games, fetchedAt })
-  } catch {
+  } catch (err) {
+    console.error('[upcoming-games] 500 error:', err)
     return NextResponse.json(
       { error: 'FETCH_ERROR', games: [], fetchedAt: new Date().toISOString() },
       { status: 500 },
