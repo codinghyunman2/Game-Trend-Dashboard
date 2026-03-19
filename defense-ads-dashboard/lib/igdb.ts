@@ -76,12 +76,12 @@ export async function fetchUpcomingMobileGames(): Promise<UpcomingGame[]> {
   const token = await getAccessToken()
 
   const now = Math.floor(Date.now() / 1000)
-  const sevenDaysLater = now + 7 * 24 * 60 * 60
+  const fourteenDaysLater = now + 14 * 24 * 60 * 60
 
   const body = `fields game.name, game.genres.name, game.summary, date, platform.name;
 where platform = (34, 39)
 & date >= ${now}
-& date <= ${sevenDaysLater};
+& date <= ${fourteenDaysLater};
 sort date asc;
 limit 20;`
 

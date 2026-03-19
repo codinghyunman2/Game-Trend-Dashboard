@@ -471,7 +471,7 @@ function DashboardContent() {
           <>
             {/* Tabs */}
             <div
-              className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide border-b border-theme-border"
+              className="flex gap-1 mb-6 border-b border-theme-border"
             >
               {TABS.map((tab) => (
                 <button

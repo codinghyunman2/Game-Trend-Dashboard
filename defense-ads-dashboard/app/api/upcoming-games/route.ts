@@ -54,15 +54,15 @@ async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   const todayStr = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}`
-  const sevenDaysLater = new Date(now)
-  sevenDaysLater.setUTCDate(now.getUTCDate() + 7)
-  const sevenStr = `${sevenDaysLater.getUTCFullYear()}${pad(sevenDaysLater.getUTCMonth() + 1)}${pad(sevenDaysLater.getUTCDate())}`
+  const fourteenDaysLater = new Date(now)
+  fourteenDaysLater.setUTCDate(now.getUTCDate() + 14)
+  const fourteenStr = `${fourteenDaysLater.getUTCFullYear()}${pad(fourteenDaysLater.getUTCMonth() + 1)}${pad(fourteenDaysLater.getUTCDate())}`
 
   const months: string[] = []
   const ym1 = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}`
   months.push(ym1)
-  if (sevenDaysLater.getUTCMonth() !== now.getUTCMonth()) {
-    const ym2 = `${sevenDaysLater.getUTCFullYear()}${pad(sevenDaysLater.getUTCMonth() + 1)}`
+  if (fourteenDaysLater.getUTCMonth() !== now.getUTCMonth()) {
+    const ym2 = `${fourteenDaysLater.getUTCFullYear()}${pad(fourteenDaysLater.getUTCMonth() + 1)}`
     months.push(ym2)
   }
 
@@ -81,7 +81,7 @@ async function fetchGamemecaGames(): Promise<UpcomingGame[]> {
 
       for (const g of data) {
         if (!g.gm_platform_1st_array?.includes('178')) continue
-        if (!g.symd || g.symd < todayStr || g.symd > sevenStr) continue
+        if (!g.symd || g.symd < todayStr || g.symd > fourteenStr) continue
 
         const releaseDate = `${g.symd.slice(0, 4)}-${g.symd.slice(4, 6)}-${g.symd.slice(6, 8)}`
         const name = cleanGameTitle(g.title)

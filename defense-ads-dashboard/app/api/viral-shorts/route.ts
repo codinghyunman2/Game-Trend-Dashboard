@@ -87,6 +87,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     publishedAfter,
     maxResults: '50',
     part: 'snippet',
+    regionCode: 'KR',
+    relevanceLanguage: 'ko',
     key: apiKey,
   }
 
