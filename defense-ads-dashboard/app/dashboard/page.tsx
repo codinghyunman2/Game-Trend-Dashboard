@@ -10,6 +10,8 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 
 const NEWS_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
 const NEWS_CACHE_KEY = 'news_cache'
+const UPCOMING_CACHE_KEY = 'upcoming_games_cache'
+const UPCOMING_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간 (서버 캐시와 동일)
 
 function formatLastUpdated(date: Date): string {
   return date.toLocaleString('ko-KR', {
@@ -140,13 +142,34 @@ export default function NewsHub() {
   }, [fetchAnalysis])
 
   const fetchUpcomingGames = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(UPCOMING_CACHE_KEY)
+        if (cached) {
+          const entry: { data: UpcomingGame[]; timestamp: number } = JSON.parse(cached)
+          if (Date.now() - entry.timestamp < UPCOMING_CACHE_TTL) {
+            setUpcomingGames(entry.data)
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Upcoming cache read failed:', e)
+      }
+    }
+
     setIsUpcomingLoading(true)
     try {
       const url = forceRefresh ? '/api/upcoming-games?refresh=true' : '/api/upcoming-games'
       const res = await fetch(url)
       if (res.ok) {
         const data: { games: UpcomingGame[] } = await res.json()
-        setUpcomingGames(data.games ?? [])
+        const games = data.games ?? []
+        setUpcomingGames(games)
+        try {
+          sessionStorage.setItem(UPCOMING_CACHE_KEY, JSON.stringify({ data: games, timestamp: Date.now() }))
+        } catch (e) {
+          console.warn('Upcoming cache write failed:', e)
+        }
       } else {
         setUpcomingGames([])
       }
