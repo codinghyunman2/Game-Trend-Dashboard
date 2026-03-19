@@ -72,7 +72,7 @@ export async function GET(): Promise<NextResponse> {
     })
   }
 
-  const publishedAfter = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const publishedAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const searchParams = new URLSearchParams({
     q: '게임 모바일게임 #Shorts',

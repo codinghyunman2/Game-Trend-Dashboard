@@ -113,7 +113,7 @@ export default function ViralPage() {
             <p className="text-2xl mb-3">⏳</p>
             <h2 className="text-lg font-bold mb-2 text-theme-text">YouTube API 할당량 초과</h2>
             <p className="text-theme-secondary">
-              오늘의 YouTube API 요청 할당량이 소진되었습니다. 내일 UTC 00:00 이후 다시 시도해주세요.
+              오늘의 YouTube API 요청 할당량이 소진되었습니다. <br /> 내일 UTC 00:00 이후 다시 시도해주세요.
             </p>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function ViralPage() {
             {isLoading ? '로딩 중...' : '새로고침'}
           </button>
         </div>
-        <p className="text-sm mb-8 text-theme-secondary">최근 30일 인기 게임 YouTube Shorts</p>
+        <p className="text-sm mb-8 text-theme-secondary">최근 7일 인기 게임 YouTube Shorts (조회수 Top)</p>
 
         {isLoading ? (
           <LoadingSpinner />
