@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
+        max_tokens: 4096,
         system: '당신은 게임 업계 뉴스 분석 전문가입니다.',
         messages: [{
           role: 'user',

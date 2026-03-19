@@ -8,9 +8,11 @@
 //  - img-src includes IGDB cover images and gamemeca thumbnails.
 //  - connect-src 'self': all API calls go to the same origin (server-side only).
 //  - upgrade-insecure-requests: automatically upgrades HTTP sub-resources to HTTPS.
+const isDev = process.env.NODE_ENV === 'development'
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: https://images.igdb.com https://www.gamemeca.com",
   "font-src 'self' https://cdn.jsdelivr.net",
