@@ -140,6 +140,7 @@ Respond in the following JSON format only (no markdown code blocks):
 
     const textContent = message.content.find((c) => c.type === 'text')
     if (!textContent || textContent.type !== 'text') {
+      console.error('[analyze/top3] no text content in response:', message.content)
       return NextResponse.json(
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
         { status: 500 },
@@ -147,15 +148,23 @@ Respond in the following JSON format only (no markdown code blocks):
     }
 
     let responseText = textContent.text.trim()
+    console.log('[analyze/top3] raw response:', responseText.slice(0, 200))
     const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
-    if (codeBlockMatch) responseText = codeBlockMatch[1].trim()
+    if (codeBlockMatch) {
+      responseText = codeBlockMatch[1].trim()
+    } else {
+      // JSON 객체만 추출 (앞뒤 텍스트 제거)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) responseText = jsonMatch[0]
+    }
 
     let result: Top3Response
     try {
       const parsed = JSON.parse(responseText)
       if (!parsed.top3 || !Array.isArray(parsed.top3)) throw new Error('invalid shape')
       result = { top3: parsed.top3 as AdAnalysis[] }
-    } catch {
+    } catch (parseErr) {
+      console.error('[analyze/top3] JSON parse error:', parseErr, 'raw:', responseText.slice(0, 300))
       return NextResponse.json(
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
         { status: 500 },

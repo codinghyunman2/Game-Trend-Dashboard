@@ -58,6 +58,8 @@ export default function Image() {
         {/* 메인 카피 */}
         <div
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             fontSize: '72px',
             fontWeight: 900,
             color: '#ffffff',
@@ -66,14 +68,17 @@ export default function Image() {
             maxWidth: '800px',
           }}
         >
-          매일 아침 5분,
-          <br />
-          <span style={{ color: '#dc2626' }}>게임 업계의</span> 모든 것
+          <span>매일 아침 5분,</span>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <span style={{ color: '#dc2626' }}>게임 업계의</span>
+            <span>모든 것</span>
+          </div>
         </div>
 
         {/* 설명 */}
         <div
           style={{
+            display: 'flex',
             fontSize: '24px',
             color: '#9ca3af',
             marginBottom: '60px',
