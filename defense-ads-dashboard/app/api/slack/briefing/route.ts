@@ -276,7 +276,7 @@ async function sendSlackMessage(
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*게임 트렌드 데일리 브리핑* <#C0AM4UEPG1J>\n${today}\n━━━━━━━━━━━━━━━━━━`,
+        text: `*게임 트렌드 데일리 브리핑* <!channel>\n${today}\n━━━━━━━━━━━━━━━━━━`,
       },
     },
     {
