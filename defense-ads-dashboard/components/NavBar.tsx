@@ -12,6 +12,7 @@ export default function NavBar() {
     { href: '/', label: '홈', labelMobile: '홈' },
     { href: '/dashboard', label: '뉴스', labelMobile: '뉴스' },
     { href: '/dashboard/ads', label: '크리에이티브', labelMobile: '크리에이티브' },
+    { href: '/dashboard/viral', label: '바이럴', labelMobile: '바이럴' },
   ]
 
   return (
