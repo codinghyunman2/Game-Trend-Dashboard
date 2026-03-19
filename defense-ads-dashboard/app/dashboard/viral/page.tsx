@@ -5,7 +5,8 @@ import { ShortsItem, ShortsFetchResponse } from '@/types/viral'
 import ShortsCard from '@/components/viral/ShortsCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
-const CACHE_KEY = 'viral_shorts_cache'
+const CACHE_KEY_GAME = 'viral_shorts_cache_game'
+const CACHE_KEY_ALL = 'viral_shorts_cache_all'
 const CACHE_TTL = 12 * 60 * 60 * 1000 // 12 hours
 
 function formatLastUpdated(date: Date): string {
@@ -17,25 +18,30 @@ function formatLastUpdated(date: Date): string {
   })
 }
 
+type Tab = 'game' | 'all'
+
 export default function ViralPage() {
-  const [items, setItems] = useState<ShortsItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<Tab>('game')
+  const [tabData, setTabData] = useState<{ game: ShortsItem[]; all: ShortsItem[] }>({ game: [], all: [] })
+  const [tabLoading, setTabLoading] = useState<{ game: boolean; all: boolean }>({ game: true, all: false })
+  const [tabError, setTabError] = useState<{ game: string | null; all: string | null }>({ game: null, all: null })
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-  async function fetchShorts(forceRefresh = false) {
-    setIsLoading(true)
-    setError(null)
+  const cacheKeyFor = (tab: Tab) => (tab === 'game' ? CACHE_KEY_GAME : CACHE_KEY_ALL)
+
+  async function fetchShorts(tab: Tab, forceRefresh = false) {
+    setTabLoading((prev) => ({ ...prev, [tab]: true }))
+    setTabError((prev) => ({ ...prev, [tab]: null }))
 
     if (!forceRefresh) {
       try {
-        const cached = sessionStorage.getItem(CACHE_KEY)
+        const cached = sessionStorage.getItem(cacheKeyFor(tab))
         if (cached) {
           const entry: { data: ShortsFetchResponse; timestamp: number } = JSON.parse(cached)
           if (Date.now() - entry.timestamp < CACHE_TTL) {
-            setItems(entry.data.items)
-            setLastUpdated(new Date(entry.data.fetchedAt))
-            setIsLoading(false)
+            setTabData((prev) => ({ ...prev, [tab]: entry.data.items }))
+            if (tab === activeTab) setLastUpdated(new Date(entry.data.fetchedAt))
+            setTabLoading((prev) => ({ ...prev, [tab]: false }))
             return
           }
         }
@@ -45,36 +51,47 @@ export default function ViralPage() {
     }
 
     try {
-      const res = await fetch('/api/viral-shorts')
+      const res = await fetch(`/api/viral-shorts?tab=${tab}`)
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error ?? 'UNKNOWN_ERROR')
-        setIsLoading(false)
+        setTabError((prev) => ({ ...prev, [tab]: data.error ?? 'UNKNOWN_ERROR' }))
+        setTabLoading((prev) => ({ ...prev, [tab]: false }))
         return
       }
 
       const response: ShortsFetchResponse = data
-      setItems(response.items)
-      setLastUpdated(new Date(response.fetchedAt))
+      setTabData((prev) => ({ ...prev, [tab]: response.items }))
+      if (tab === activeTab) setLastUpdated(new Date(response.fetchedAt))
 
       try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: response, timestamp: Date.now() }))
+        sessionStorage.setItem(cacheKeyFor(tab), JSON.stringify({ data: response, timestamp: Date.now() }))
       } catch (e) {
         console.warn('Viral shorts cache write failed:', e)
       }
     } catch (e) {
       console.error('Viral shorts fetch error:', e)
-      setError('NETWORK_ERROR')
+      setTabError((prev) => ({ ...prev, [tab]: 'NETWORK_ERROR' }))
     } finally {
-      setIsLoading(false)
+      setTabLoading((prev) => ({ ...prev, [tab]: false }))
     }
   }
 
   useEffect(() => {
-    fetchShorts()
+    fetchShorts('game')
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function handleTabChange(tab: Tab) {
+    setActiveTab(tab)
+    if (tabData[tab].length === 0 && !tabLoading[tab] && !tabError[tab]) {
+      fetchShorts(tab)
+    }
+  }
+
+  const isLoading = tabLoading[activeTab]
+  const error = tabError[activeTab]
+  const items = tabData[activeTab]
 
   function renderError() {
     if (error === 'YOUTUBE_API_KEY_NOT_SET') {
@@ -141,7 +158,7 @@ export default function ViralPage() {
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold text-theme-text">🎬 바이럴 Shorts</h1>
           <button
-            onClick={() => fetchShorts(true)}
+            onClick={() => fetchShorts(activeTab, true)}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
@@ -149,7 +166,25 @@ export default function ViralPage() {
             {isLoading ? '로딩 중...' : '새로고침'}
           </button>
         </div>
-        <p className="text-sm mb-8 text-theme-secondary">최근 7일 인기 게임 YouTube Shorts (조회수 Top)</p>
+        <p className="text-sm mb-4 text-theme-secondary">최근 7일 인기 YouTube Shorts (조회수 Top)</p>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 p-1 rounded-lg w-fit" style={{ background: 'var(--color-surface)' }}>
+          {(['game', 'all'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className="px-5 py-2 rounded-md text-sm font-medium transition-colors"
+              style={
+                activeTab === tab
+                  ? { background: 'var(--color-accent)', color: '#fff' }
+                  : { color: 'var(--color-secondary)' }
+              }
+            >
+              {tab === 'game' ? '🎮 게임' : '🌐 전체'}
+            </button>
+          ))}
+        </div>
 
         {isLoading ? (
           <LoadingSpinner />

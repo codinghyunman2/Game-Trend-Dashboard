@@ -7,7 +7,7 @@ interface CacheEntry {
 }
 
 // Module-level server-side memory cache, TTL 12 hours
-let memoryCache: CacheEntry | null = null
+const memoryCache: { game: CacheEntry | null; all: CacheEntry | null } = { game: null, all: null }
 const CACHE_TTL = 12 * 60 * 60 * 1000
 
 function parseIso8601Duration(duration: string): number {
@@ -55,7 +55,7 @@ interface YouTubeVideosResponse {
   error?: { code: number; message: string }
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   const apiKey = process.env.YOUTUBE_API_KEY
   if (!apiKey) {
     return NextResponse.json(
@@ -64,18 +64,24 @@ export async function GET(): Promise<NextResponse> {
     )
   }
 
+  const url = new URL(request.url)
+  const tab = (url.searchParams.get('tab') ?? 'game') as 'game' | 'all'
+  const query = tab === 'all' ? '#Shorts' : '게임 모바일게임 #Shorts'
+  const cacheKey = tab === 'all' ? 'all' : 'game'
+
   // Serve from memory cache if fresh
-  if (memoryCache && Date.now() - memoryCache.timestamp < CACHE_TTL) {
+  const cached = memoryCache[cacheKey]
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return NextResponse.json({
-      ...memoryCache.data,
-      cachedAt: new Date(memoryCache.timestamp).toISOString(),
+      ...cached.data,
+      cachedAt: new Date(cached.timestamp).toISOString(),
     })
   }
 
   const publishedAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const searchParams = new URLSearchParams({
-    q: '게임 모바일게임 #Shorts',
+    q: query,
     type: 'video',
     videoDuration: 'short',
     order: 'viewCount',
@@ -179,7 +185,7 @@ export async function GET(): Promise<NextResponse> {
   const now = new Date().toISOString()
   const response: ShortsFetchResponse = { items, fetchedAt: now }
 
-  memoryCache = { data: response, timestamp: Date.now() }
+  memoryCache[cacheKey] = { data: response, timestamp: Date.now() }
 
   return NextResponse.json(response)
 }
