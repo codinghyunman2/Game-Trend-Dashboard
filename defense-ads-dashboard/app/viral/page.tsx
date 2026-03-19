@@ -219,7 +219,7 @@ export default function ViralPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
                 <button
                   onClick={() => setPage(currentPage - 1)}
                   disabled={currentPage === 1}

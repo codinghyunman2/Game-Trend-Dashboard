@@ -465,13 +465,13 @@ function DashboardContent() {
           <>
             {/* Tabs */}
             <div
-              className="flex gap-1 mb-6 border-b border-theme-border"
+              className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide border-b border-theme-border"
             >
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 whitespace-nowrap min-h-[44px]"
+                  className="px-2 sm:px-4 py-2.5 text-sm font-medium transition-colors rounded-t-lg -mb-px border-b-2 whitespace-nowrap min-h-[44px]"
                   style={{
                     color: activeTab === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                     borderBottomColor: activeTab === tab.id ? 'var(--color-accent)' : 'transparent',
