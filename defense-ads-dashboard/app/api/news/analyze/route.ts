@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2048,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
         messages: [{
           role: 'user',
           content: `당신은 게임 업계 뉴스 분석 전문가입니다. 아래 뉴스 목록에서 게임 업계에 가장 큰 영향을 미치는 뉴스 Top 5를 선정하고 분석해주세요.

@@ -261,14 +261,14 @@ async function sendSlackMessage(
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: `🎮 *이번 주 출시 예정*\n${upcomingGames.slice(0, 5).map((g) => {
+          text: `🎮 *신규 출시 예정*\n${upcomingGames.slice(0, 5).map((g) => {
             const name = escapeSlackText(g.nameKo || g.name)
             const platform = g.platform.join('/')
             const date = g.releaseDateLabel ? ` · ${g.releaseDateLabel}` : ''
             return g.link && isValidHttpsUrl(g.link)
               ? `• <${g.link}|${name}> — ${platform}${date}`
               : `• ${name} — ${platform}${date}`
-          }).join('\n')}`,
+          }).join('\n')}\n`,
         },
       }]
     : []
@@ -278,16 +278,16 @@ async function sendSlackMessage(
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*게임 트렌드 데일리 브리핑*\n${today}\n━━━━━━━━━━━━━━━━━━━━`,
+        text: `*게임 트렌드 데일리 브리핑*\n${today}\n━━━━━━━━━━━━━━━━━━`,
       },
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: `📰 *오늘의 주요 뉴스*\n${newsLines}` },
+      text: { type: 'mrkdwn', text: `📰 *오늘의 주요 뉴스*\n${newsLines}\n` },
     },
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: `🎮 *광고 트렌드*\n${adTrendLines}` },
+      text: { type: 'mrkdwn', text: `🖥️ *광고 트렌드*\n${adTrendLines}\n` },
     },
     ...upcomingBlock,
     {
