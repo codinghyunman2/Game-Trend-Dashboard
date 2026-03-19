@@ -292,7 +292,7 @@ async function sendSlackMessage(
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `👉 <https://game-wave.vercel.app/news|전체 보기>`,
+        text: `👉 <https://rocket-brief.vercel.app/news|전체 보기>`,
       },
     },
   ]
