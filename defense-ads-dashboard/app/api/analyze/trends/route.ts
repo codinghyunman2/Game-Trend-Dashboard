@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
+      max_tokens: 2048,
       system:
         'You are a mobile game advertising specialist. Identify common creative trends across ads. Respond with only JSON. All output fields must be in Korean.',
       messages: [
