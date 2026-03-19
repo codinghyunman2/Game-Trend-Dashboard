@@ -1,3 +1,18 @@
+/**
+ * cache.ts — Simple in-memory cache
+ *
+ * ⚠️  SERVERLESS LIMITATION — CACHE IS IN-MEMORY ONLY
+ * The `cacheStore` below is a plain module-level object. In a serverless /
+ * edge environment (Vercel Functions, AWS Lambda, etc.) each function instance
+ * has its own isolated memory. Cached values are NOT shared across instances
+ * and are lost on every cold start, making this cache unreliable under
+ * concurrent production traffic.
+ *
+ * TODO: Replace with a distributed cache such as Vercel KV (Redis) or
+ * Upstash to share cache state across all instances and survive cold starts.
+ * Example: https://vercel.com/docs/storage/vercel-kv
+ */
+
 interface CacheEntry<T> {
   data: T
   cachedAt: number

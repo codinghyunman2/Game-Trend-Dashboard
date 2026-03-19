@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { XMLParser } from 'fast-xml-parser'
 import { NewsItem, NewsFetchResponse } from '@/types/news'
 import { getCache, setCache } from '@/lib/cache'
 import { extractClientIp, createRateLimiter, auditLog } from '@/lib/security'
@@ -71,21 +72,62 @@ function classifyCategory(title: string, summary: string): 'defense' | 'mobile' 
 }
 
 function parseRSSItems(xml: string, source: RSSSource): NewsItem[] {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    cdataPropName: '__cdata',
+    textNodeName: '__text',
+    isArray: (name) => name === 'item' || name === 'entry',
+  })
+
+  let parsed: Record<string, unknown>
+  try {
+    parsed = parser.parse(xml) as Record<string, unknown>
+  } catch {
+    return []
+  }
+
+  // Support RSS 2.0 (rss > channel > item[]) and Atom (feed > entry[])
+  const rss = parsed?.rss as Record<string, unknown> | undefined
+  const channel = (rss?.channel ?? parsed?.feed ?? {}) as Record<string, unknown>
+  const rawItems = (channel.item ?? channel.entry ?? []) as unknown[]
+
   const items: NewsItem[] = []
-  const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)
 
-  for (const itemMatch of itemMatches) {
-    const item = itemMatch[1]
+  for (const raw of rawItems) {
+    if (!raw || typeof raw !== 'object') continue
+    const entry = raw as Record<string, unknown>
 
-    const extractTag = (tag: string): string => {
-      const match = item.match(new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i'))
-      return match?.[1]?.trim() ?? ''
+    // Extract text, handling CDATA wrapper objects from fast-xml-parser
+    const extractText = (val: unknown): string => {
+      if (typeof val === 'string') return val.trim()
+      if (typeof val === 'number') return String(val)
+      if (val && typeof val === 'object') {
+        const obj = val as Record<string, unknown>
+        if (typeof obj.__cdata === 'string') return obj.__cdata.trim()
+        if (typeof obj.__text === 'string') return obj.__text.trim()
+      }
+      return ''
     }
 
-    const title = decodeHtmlEntities(extractTag('title'))
-    const link = extractTag('link') || (item.match(/<link>\s*(https?:\/\/[^\s<]+)\s*/i)?.[1] ?? '')
-    const pubDateStr = extractTag('pubDate')
-    const description = extractTag('description')
+    // Atom feeds use <id> + <link href="..."> instead of <link> text
+    const extractLink = (): string => {
+      const linkVal = entry.link
+      if (typeof linkVal === 'string') return linkVal.trim()
+      if (typeof linkVal === 'number') return String(linkVal)
+      if (linkVal && typeof linkVal === 'object') {
+        const linkObj = linkVal as Record<string, unknown>
+        // Atom: <link href="..." rel="alternate"/>
+        if (typeof linkObj['@_href'] === 'string') return linkObj['@_href'].trim()
+        if (typeof linkObj.__cdata === 'string') return linkObj.__cdata.trim()
+        if (typeof linkObj.__text === 'string') return linkObj.__text.trim()
+      }
+      return ''
+    }
+
+    const title = decodeHtmlEntities(extractText(entry.title))
+    const link = extractLink() || extractText(entry.id)
+    const pubDateStr = extractText(entry.pubDate ?? entry.published ?? entry.updated ?? '')
+    const description = extractText(entry.description ?? entry.summary ?? entry.content ?? '')
 
     if (!title || !link) continue
 
@@ -271,19 +313,16 @@ export async function GET(request: NextRequest) {
       fetchedAt: new Date().toISOString(),
     }
 
-    const cachedAt = new Date().toISOString()
-    setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
-    const response = NextResponse.json({ ...responseData, cachedAt })
-
-    // Background translation
+    // Await translation before returning so the response includes translated fields
     const toTranslate = allNews.filter((n) => !n.isKorean && translateCandidateIds.has(n.id))
     if (toTranslate.length > 0) {
-      batchTranslate(toTranslate).then(() => {
-        setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
-      }).catch(() => {/* silent */})
+      await batchTranslate(toTranslate)
     }
 
-    return response
+    const cachedAt = new Date().toISOString()
+    setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
+
+    return NextResponse.json({ ...responseData, cachedAt })
   } catch {
     return NextResponse.json(
       { error: 'FETCH_ERROR', message: '뉴스를 가져오는 중 오류가 발생했습니다.' },

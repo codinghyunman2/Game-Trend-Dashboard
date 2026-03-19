@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (!accessToken) {
     return NextResponse.json(
       { error: 'META_ACCESS_TOKEN_NOT_SET' },
-      { status: 401 },
+      { status: 500 },
     )
   }
 

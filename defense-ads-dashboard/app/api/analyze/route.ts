@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   if (!apiKey) {
     return NextResponse.json(
       { error: 'ANTHROPIC_API_KEY_NOT_SET' },
-      { status: 401 },
+      { status: 500 },
     )
   }
 

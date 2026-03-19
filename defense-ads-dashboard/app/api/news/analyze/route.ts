@@ -148,7 +148,38 @@ Respond in the following JSON array format. Output pure JSON only, no markdown c
     const data = await res.json()
     const responseText = data.content?.[0]?.text ?? '[]'
     const cleaned = responseText.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
-    const analyzed = JSON.parse(cleaned)
+    let analyzed: unknown
+    try {
+      analyzed = JSON.parse(cleaned)
+    } catch {
+      console.error('[news/analyze] Failed to parse LLM JSON response')
+      return NextResponse.json(
+        { error: 'ANALYSIS_FAILED', message: '뉴스 분석 중 오류가 발생했습니다.' },
+        { status: 500 },
+      )
+    }
+
+    // Validate shape: must be an array with expected fields
+    if (
+      !Array.isArray(analyzed) ||
+      analyzed.length === 0 ||
+      !analyzed.every(
+        (item) =>
+          item !== null &&
+          typeof item === 'object' &&
+          typeof (item as Record<string, unknown>).rank === 'number' &&
+          typeof (item as Record<string, unknown>).titleKo === 'string' &&
+          typeof (item as Record<string, unknown>).summaryKo === 'string' &&
+          typeof (item as Record<string, unknown>).source === 'string' &&
+          typeof (item as Record<string, unknown>).link === 'string',
+      )
+    ) {
+      console.error('[news/analyze] LLM response failed shape validation')
+      return NextResponse.json(
+        { error: 'ANALYSIS_FAILED', message: '뉴스 분석 중 오류가 발생했습니다.' },
+        { status: 500 },
+      )
+    }
 
     return NextResponse.json(analyzed)
   } catch (err) {

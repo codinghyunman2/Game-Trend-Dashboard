@@ -15,7 +15,7 @@ function buildCopyCountMap(allAds: MetaAd[]): Map<string, number> {
   return map
 }
 
-export function getCopyCount(ad: MetaAd, allAds: MetaAd[]): number {
+function getCopyCount(ad: MetaAd, allAds: MetaAd[]): number {
   const body = ad.ad_creative_bodies?.[0]
   return allAds.filter(
     (a) => a.page_name === ad.page_name && a.ad_creative_bodies?.[0] === body

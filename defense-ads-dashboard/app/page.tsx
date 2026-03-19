@@ -26,11 +26,6 @@ export default function LandingPage() {
   const NEWS_COUNT = 150
 
   useEffect(() => {
-    fetch('/api/fetch-ads').catch(() => {})
-    fetch('/api/upcoming-games').catch(() => {})
-  }, [])
-
-  useEffect(() => {
     const timer = setTimeout(() => setStarted(true), 200)
     return () => clearTimeout(timer)
   }, [])

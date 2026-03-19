@@ -1,10 +1,19 @@
 /**
  * security.ts — Shared security utilities
  *
- * Design notes:
+ * ⚠️  SERVERLESS LIMITATION — RATE LIMITER IS IN-MEMORY ONLY
+ * The rate limiter below uses a plain in-memory Map. In a serverless / edge
+ * environment (Vercel Functions, AWS Lambda, etc.) each function instance has
+ * its own isolated memory. Requests routed to different instances bypass each
+ * other's counters entirely, making the rate limit per-instance rather than
+ * global. Under production traffic this provides very weak protection.
+ *
+ * TODO: Replace `createRateLimiter` with a distributed store such as
+ * Vercel KV (Redis) or Upstash to enforce global rate limits correctly.
+ * Example: https://vercel.com/docs/storage/vercel-kv
+ *
+ * Other design notes:
  * - No next/server imports: keeps this module testable without Next.js mocks
- * - Rate limiter is in-process. In multi-instance / serverless deployments the
- *   limit is per-instance, not global. Use Redis for global enforcement.
  * - Secret comparison is constant-time (prevents timing attacks).
  */
 
@@ -153,7 +162,15 @@ export function validateKeywords(raw: string): KeywordValidationResult {
 
 /**
  * Returns true when the Content-Length header exceeds maxBytes.
- * Safe to call even when Content-Length is absent (returns false).
+ *
+ * ⚠️  LIMITATION: When the Content-Length header is absent (which is common
+ * with chunked transfer encoding or certain HTTP clients), this function
+ * returns false and the check is skipped. For complete protection, also
+ * measure the body size after parsing (e.g. check
+ * `JSON.stringify(body).length`) or use a streaming byte counter.
+ *
+ * TODO: Consider enforcing body size limits at the reverse-proxy / CDN layer
+ * (e.g. Vercel's built-in 4.5 MB body limit) as a defence-in-depth measure.
  */
 export function isBodyTooLarge(contentLength: string | null, maxBytes: number): boolean {
   if (!contentLength) return false
