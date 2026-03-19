@@ -149,6 +149,7 @@ export default function NewsHub() {
           const entry: { data: UpcomingGame[]; timestamp: number } = JSON.parse(cached)
           if (Date.now() - entry.timestamp < UPCOMING_CACHE_TTL) {
             setUpcomingGames(entry.data)
+            setIsUpcomingLoading(false)
             return
           }
         }
@@ -242,7 +243,7 @@ export default function NewsHub() {
             {/* AI Top 5 */}
             <section className="mb-10">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-theme-text">AI 오늘의 주요뉴스 Top 5</h2>
+                <h2 className="text-lg font-semibold text-theme-text">AI 오늘의 주요뉴스 Top 3</h2>
                 <button
                   onClick={() => fetchNews(false)}
                   disabled={isLoading}

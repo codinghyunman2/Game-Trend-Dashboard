@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         system: 'You are an expert analyst of the gaming industry news.',
         messages: [{
           role: 'user',
-          content: `From the news list below, select and analyze the Top 5 most impactful stories for the gaming industry.
+          content: `From the news list below, select and analyze the Top 3 most impactful stories for the gaming industry.
 
 Selection criteria:
 1. Industry impact (breadth of effect on the overall market)
@@ -119,14 +119,14 @@ The summaryKo field must be exactly 3 sentences separated by newlines (\\n):
 Sentence 1: Why this news matters
 Sentence 2: What the key content is
 Sentence 3: What it means for the gaming industry
-Write all summaryKo sentences in Korean.
+Write all summaryKo sentences in Korean using 음슴체 (informal Korean style ending with ~음, ~슴, ~함, ~됨, ~임 etc. Never use 합쇼체 or 해요체).
 
 Respond in the following JSON array format. Output pure JSON only, no markdown code blocks:
 [
   {
     "rank": 1,
     "titleKo": "Korean title",
-    "summaryKo": "Why this news matters (Korean)\\nWhat the key content is (Korean)\\nWhat it means for the industry (Korean)",
+    "summaryKo": "Why this news matters (Korean, 음슴체)\\nWhat the key content is (Korean, 음슴체)\\nWhat it means for the industry (Korean, 음슴체)",
     "source": "source name",
     "link": "original URL",
     "pubDate": "ISO date"

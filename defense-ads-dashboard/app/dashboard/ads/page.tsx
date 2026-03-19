@@ -96,13 +96,13 @@ function InsightSection({ allAds, trends, isAnalyzing }: { allAds: MetaAd[]; tre
           <p className="text-xs mb-3 uppercase tracking-wide text-theme-secondary">공통 크리에이티브 트렌드</p>
           {isAnalyzing ? (
             <div className="flex flex-col gap-2 animate-pulse">
-              <div className="h-3 rounded w-full bg-theme-surface" />
-              <div className="h-3 rounded w-5/6 bg-theme-surface" />
-              <div className="h-3 rounded w-4/6 bg-theme-surface" />
+              <div className="h-3 rounded w-full bg-white/10" />
+              <div className="h-3 rounded w-5/6 bg-white/10" />
+              <div className="h-3 rounded w-4/6 bg-white/10" />
               <div className="flex gap-1.5 mt-2">
-                <div className="h-5 rounded-full w-16 bg-theme-surface" />
-                <div className="h-5 rounded-full w-20 bg-theme-surface" />
-                <div className="h-5 rounded-full w-14 bg-theme-surface" />
+                <div className="h-5 rounded-full w-16 bg-white/10" />
+                <div className="h-5 rounded-full w-20 bg-white/10" />
+                <div className="h-5 rounded-full w-14 bg-white/10" />
               </div>
             </div>
           ) : trends ? (

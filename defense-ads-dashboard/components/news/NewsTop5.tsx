@@ -48,7 +48,7 @@ export default function NewsTop5({
   if (loading) {
     return (
       <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <SkeletonItem key={i} />
         ))}
       </div>
