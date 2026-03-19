@@ -79,13 +79,14 @@ export default function NewsTop5({
             <h3 className="text-sm font-semibold leading-snug mb-1 text-theme-text">
               {item.titleKo}
             </h3>
-            <div className="mb-2 space-y-0.5">
-              {item.summaryKo.split('\n').map((line, i) => (
-                <p key={i} className="leading-relaxed text-theme-secondary" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                  · {line}
-                </p>
+            <ul className="mb-2 space-y-1.5 mt-1.5">
+              {item.summaryKo.split('\n').filter(line => line.trim()).map((line, i) => (
+                <li key={i} className="flex items-start gap-2" style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-theme-accent opacity-70" />
+                  <span className="text-theme-secondary">{line}</span>
+                </li>
               ))}
-            </div>
+            </ul>
             <div className="flex items-center gap-3 text-xs text-theme-secondary">
               <span>{item.source}</span>
               <span>{timeAgo(item.pubDate)}</span>
