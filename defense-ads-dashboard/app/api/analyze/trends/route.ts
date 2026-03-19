@@ -53,7 +53,14 @@ export async function POST(request: NextRequest) {
 
   let body: unknown
   try {
-    body = await request.json()
+    const rawBody = await request.text()
+    if (rawBody.length > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'PAYLOAD_TOO_LARGE', message: '요청 크기가 너무 큽니다.' },
+        { status: 413 },
+      )
+    }
+    body = JSON.parse(rawBody)
   } catch {
     return NextResponse.json(
       { error: 'INVALID_JSON', message: '잘못된 요청 형식입니다.' },
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const cacheKey = `ads_trends:${[...keywords].sort().join(',')}`
+  const cacheKey = `ads_trends:${keywords.map(encodeURIComponent).sort().join('|')}`
 
   if (!forceRefresh) {
     const cached = getCache<CachePayload>(cacheKey)

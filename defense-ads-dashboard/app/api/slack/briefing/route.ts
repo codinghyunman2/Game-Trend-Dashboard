@@ -46,8 +46,7 @@ function getBaseUrl(): string {
   }
 
   // Should not reach here in production; indicates misconfiguration
-  console.error('[slack/briefing] No valid base URL found — check SITE_URL env var')
-  return 'http://localhost:3000'
+  throw new Error('[slack/briefing] No valid base URL found — set SITE_URL environment variable')
 }
 
 async function fetchUpcomingGamesData(): Promise<UpcomingGame[]> {

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { ShortsItem, ShortsFetchResponse } from '@/types/viral'
+import { extractClientIp, createRateLimiter, auditLog, safeFetch } from '@/lib/security'
 
 interface CacheEntry {
   data: ShortsFetchResponse
@@ -8,6 +9,8 @@ interface CacheEntry {
 
 // Module-level server-side memory cache, TTL 12 hours
 const memoryCache: { game: CacheEntry | null; all: CacheEntry | null } = { game: null, all: null }
+
+const rateLimiter = createRateLimiter(60_000, 5)
 const CACHE_TTL = 12 * 60 * 60 * 1000
 
 function hasKorean(text: string): boolean {
@@ -59,7 +62,17 @@ interface YouTubeVideosResponse {
   error?: { code: number; message: string }
 }
 
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const ip = extractClientIp(request.headers)
+  const rl = rateLimiter.check(ip)
+  if (!rl.allowed) {
+    auditLog('RATE_LIMIT', ip, '/api/viral-shorts')
+    return NextResponse.json(
+      { error: 'RATE_LIMITED', message: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    )
+  }
+
   const apiKey = process.env.YOUTUBE_API_KEY
   if (!apiKey) {
     return NextResponse.json(
@@ -98,13 +111,13 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   // 두 검색을 병렬로: 조회수순 + 최신순
   const [searchByViews, searchByDate] = await Promise.all([
-    fetch(
+    safeFetch(
       `https://www.googleapis.com/youtube/v3/search?${new URLSearchParams({ ...baseParams, order: 'viewCount' }).toString()}`,
-      { next: { revalidate: 0 } },
+      { next: { revalidate: 0 } } as RequestInit,
     ).then((r) => r.json() as Promise<YouTubeSearchResponse>),
-    fetch(
+    safeFetch(
       `https://www.googleapis.com/youtube/v3/search?${new URLSearchParams({ ...baseParams, order: 'date' }).toString()}`,
-      { next: { revalidate: 0 } },
+      { next: { revalidate: 0 } } as RequestInit,
     ).then((r) => r.json() as Promise<YouTubeSearchResponse>),
   ])
 
@@ -117,8 +130,9 @@ export async function GET(request: Request): Promise<NextResponse> {
           { status: 429 },
         )
       }
+      console.error('[viral-shorts] YouTube search API error:', searchData.error.message)
       return NextResponse.json(
-        { error: 'YOUTUBE_API_ERROR', message: searchData.error.message },
+        { error: 'YOUTUBE_API_ERROR', message: 'YouTube 데이터를 가져오는 중 오류가 발생했습니다.' },
         { status: 500 },
       )
     }
@@ -141,9 +155,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const videoDetailResults = await Promise.all(
     idChunks.map((chunk) =>
-      fetch(
+      safeFetch(
         `https://www.googleapis.com/youtube/v3/videos?${new URLSearchParams({ id: chunk.join(','), part: 'statistics,contentDetails', key: apiKey }).toString()}`,
-        { next: { revalidate: 0 } },
+        { next: { revalidate: 0 } } as RequestInit,
       ).then((r) => r.json() as Promise<YouTubeVideosResponse>),
     ),
   )
@@ -156,8 +170,9 @@ export async function GET(request: Request): Promise<NextResponse> {
           { status: 429 },
         )
       }
+      console.error('[viral-shorts] YouTube videos API error:', videosData.error.message)
       return NextResponse.json(
-        { error: 'YOUTUBE_API_ERROR', message: videosData.error.message },
+        { error: 'YOUTUBE_API_ERROR', message: 'YouTube 데이터를 가져오는 중 오류가 발생했습니다.' },
         { status: 500 },
       )
     }

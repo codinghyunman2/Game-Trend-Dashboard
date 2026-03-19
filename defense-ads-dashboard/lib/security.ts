@@ -239,6 +239,8 @@ const ALLOWED_EXTERNAL_HOSTS = new Set([
   'gamingonphone.com',
   // Slack notifications
   'hooks.slack.com',
+  // YouTube
+  'www.googleapis.com',
 ])
 
 /**
@@ -292,6 +294,18 @@ export type AuditEventType =
  * Suppressed in the test environment to keep test output clean.
  * In production wire this to your observability pipeline.
  */
+/**
+ * Fetch wrapper that validates the URL against the SSRF allowlist before making
+ * a request. Throws if the URL is not in the allowlist.
+ */
+export async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
+  if (!isAllowedExternalUrl(url)) {
+    const hostname = (() => { try { return new URL(url).hostname } catch { return url } })()
+    throw new Error(`[safeFetch] Blocked outbound request to disallowed host: ${hostname}`)
+  }
+  return fetch(url, init)
+}
+
 export function auditLog(
   type: AuditEventType,
   ip: string,
