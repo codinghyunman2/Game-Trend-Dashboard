@@ -10,9 +10,9 @@ export default function NavBar() {
 
   const links = [
     { href: '/', label: '홈', labelMobile: '홈' },
-    { href: '/dashboard', label: '뉴스', labelMobile: '뉴스' },
-    { href: '/dashboard/ads', label: '크리에이티브', labelMobile: '크리에이티브' },
-    { href: '/dashboard/viral', label: '바이럴', labelMobile: '바이럴' },
+    { href: '/news', label: '뉴스', labelMobile: '뉴스' },
+    { href: '/creative', label: '크리에이티브', labelMobile: '크리에이티브' },
+    { href: '/viral', label: '바이럴', labelMobile: '바이럴' },
   ]
 
   return (
@@ -26,9 +26,7 @@ export default function NavBar() {
               {links.map((link) => {
                 const isActive = link.href === '/'
                   ? pathname === '/'
-                  : link.href === '/dashboard'
-                  ? pathname === '/dashboard'
-                  : pathname.startsWith(link.href)
+                  : pathname === link.href
                 return (
                   <Link
                     key={link.href}

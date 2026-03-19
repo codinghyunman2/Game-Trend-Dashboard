@@ -69,7 +69,7 @@ export default function LandingPage() {
             Meta 라이브러리 기반 실시간 크리에이티브 트렌드
           </p>
           <Link
-            href="/dashboard"
+            href="/news"
             prefetch={true}
             className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 w-full sm:w-auto"
             style={{ background: 'var(--color-accent)', minHeight: '44px' }}
@@ -494,7 +494,7 @@ export default function LandingPage() {
           지금 바로 살펴보세요
         </h2>
         <Link
-          href="/dashboard"
+          href="/news"
           prefetch={true}
           className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 mb-6 w-full sm:w-auto"
           style={{ background: 'var(--color-accent)', minHeight: '44px' }}

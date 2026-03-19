@@ -12,25 +12,28 @@
 | 경로 | 페이지 | 설명 |
 |------|--------|------|
 | `/` | 랜딩 페이지 | 서비스 소개 + 지표 |
-| `/dashboard` | 뉴스 허브 | 게임 업계 RSS 뉴스 수집·번역·AI 분석 |
-| `/dashboard/ads` | 광고 트렌드 | Meta Ad Library 기반 디펜스 광고 대시보드 |
+| `/news` | 뉴스 허브 | 게임 업계 RSS 뉴스 수집·번역·AI 분석 |
+| `/creative` | 크리에이티브 | Meta Ad Library 기반 디펜스 광고 대시보드 |
+| `/viral` | 바이럴 Shorts | YouTube 인기 Shorts 조회수 Top 수집 |
 
 ---
 
 ## 페이지 라우팅 구조
 - `/` → 랜딩 페이지 (서비스 소개 + 지표)
-- `/dashboard` → 뉴스 허브 메인
-- `/dashboard/ads` → 광고 트렌드 대시보드
+- `/news` → 뉴스 허브 메인
+- `/creative` → 크리에이티브 (광고 트렌드) 대시보드
+- `/viral` → 바이럴 Shorts
 
 ## 퀵메뉴 구성
 - 홈 → `/`
-- 대시보드 → `/dashboard`
-- 광고 트렌드 → `/dashboard/ads`
+- 뉴스 → `/news`
+- 크리에이티브 → `/creative`
+- 바이럴 → `/viral`
 
 ## 신규 페이지 추가 시 주의사항
 - 모든 내부 링크는 위 라우팅 구조 기준으로 작성
-- `/ads` 또는 `/` (뉴스 허브) 로 링크하지 말 것
-- 반드시 `/dashboard` 또는 `/dashboard/ads` 사용
+- 구 경로(`/dashboard`, `/dashboard/ads`, `/dashboard/viral`)는 리다이렉트만 존재
+- 반드시 `/news`, `/creative`, `/viral` 사용
 
 ---
 
