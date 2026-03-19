@@ -21,16 +21,11 @@ function useCountUp(target: number, duration: number = 1500, start: boolean = fa
 }
 
 export default function LandingPage() {
-  const [newsCount, setNewsCount] = useState<number | null>(null)
   const [started, setStarted] = useState(false)
 
+  const NEWS_COUNT = 150
+
   useEffect(() => {
-    fetch('/api/news/fetch')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.allNews?.length != null) setNewsCount(data.allNews.length)
-      })
-      .catch(() => {})
     fetch('/api/fetch-ads').catch(() => {})
     fetch('/api/upcoming-games').catch(() => {})
   }, [])
@@ -41,7 +36,7 @@ export default function LandingPage() {
   }, [])
 
   const channelCount = useCountUp(11, 1500, started)
-  const newsCountAnimated = useCountUp(newsCount ?? 0, 1500, started && newsCount !== null)
+  const newsCountAnimated = useCountUp(NEWS_COUNT, 1500, started)
   const aiCount = useCountUp(2, 1500, started)
 
   return (
@@ -112,7 +107,7 @@ export default function LandingPage() {
           </div>
           <div className="flex flex-col items-center text-center">
             <p className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-none mb-3">
-              {newsCount === null ? '—' : `${newsCountAnimated}+`}
+              {`${newsCountAnimated}+`}
             </p>
             <p className="text-white/70 font-medium">수집 뉴스</p>
           </div>
