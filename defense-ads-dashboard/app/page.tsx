@@ -406,7 +406,80 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 섹션 7 — CTA */}
+      {/* 섹션 7 — 바이럴 Shorts */}
+      <section
+        className="px-6 lg:px-20 py-16 lg:py-24"
+        style={{ backgroundColor: 'var(--color-bg)' }}
+      >
+        <div className="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* 텍스트 */}
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <span
+                className="inline-block text-xs font-bold tracking-[0.2em] uppercase px-3 py-1 rounded-full"
+                style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+              >
+                SHORTS
+              </span>
+              <span
+                className="inline-block text-xs font-bold tracking-[0.15em] uppercase px-2 py-1 rounded-full text-white"
+                style={{ background: 'var(--color-accent)' }}
+              >
+                NEW
+              </span>
+            </div>
+            <h2
+              className="text-2xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-6"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              최근 7일 바이럴
+              <br />
+              YouTube Shorts
+            </h2>
+            <p
+              className="text-sm sm:text-lg leading-relaxed mb-8"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              게임 및 전체 카테고리 탭으로 구분해 최근 7일간 가장 많이 본 YouTube Shorts를 조회수 순으로 자동 수집합니다.
+            </p>
+            <ul className="space-y-3">
+              {['게임 카테고리 Shorts', '전체 카테고리 Shorts', '조회수 Top 순위 자동 수집'].map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: 'var(--color-accent)' }}
+                  />
+                  <span className="text-sm sm:text-base" style={{ color: 'var(--color-text-secondary)' }}>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {/* 비주얼 */}
+          <div
+            className="rounded-3xl p-10 flex flex-col items-center justify-center gap-6 min-h-[280px] lg:min-h-[320px]"
+            style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+          >
+            <svg viewBox="0 0 80 80" className="w-16 h-16" fill="none" aria-hidden>
+              <rect x="8" y="14" width="64" height="40" rx="6" stroke="var(--color-accent)" strokeWidth="3" opacity="0.4" />
+              <path d="M32 26 L32 46 L54 36 Z" fill="var(--color-accent)" opacity="0.9" />
+              <rect x="24" y="58" width="32" height="4" rx="2" fill="var(--color-accent)" opacity="0.4" />
+            </svg>
+            <div className="text-center">
+              <p
+                className="text-5xl font-extrabold mb-1"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                7일
+              </p>
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                바이럴 Shorts 자동 수집
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 섹션 8 — CTA */}
       <section
         className="flex flex-col items-center justify-center px-6 py-16 lg:py-24 text-center"
         style={{
