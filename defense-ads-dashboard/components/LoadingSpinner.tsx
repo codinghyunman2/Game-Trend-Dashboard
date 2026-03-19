@@ -57,7 +57,7 @@ export default function LoadingSpinner() {
         />
       </svg>
       <p
-        className="text-sm text-purple-400/70 mt-4 text-center transition-opacity duration-250"
+        className="text-sm text-theme-accent mt-4 text-center transition-opacity duration-250"
         style={{ opacity: isVisible ? 1 : 0 }}
       >
         {MESSAGES[index]}

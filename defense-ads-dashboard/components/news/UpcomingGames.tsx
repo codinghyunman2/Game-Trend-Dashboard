@@ -124,7 +124,7 @@ export default function UpcomingGames({ games, loading }: Props) {
                   href={game.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-auto text-xs text-purple-400 hover:text-purple-300 transition-colors flex-shrink-0"
+                  className="ml-auto text-xs text-theme-accent hover:opacity-80 transition-colors flex-shrink-0"
                 >
                   보기 →
                 </a>
