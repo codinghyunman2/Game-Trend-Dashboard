@@ -10,6 +10,10 @@ interface CacheEntry {
 const memoryCache: { game: CacheEntry | null; all: CacheEntry | null } = { game: null, all: null }
 const CACHE_TTL = 12 * 60 * 60 * 1000
 
+function hasKorean(text: string): boolean {
+  return /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(text)
+}
+
 function parseIso8601Duration(duration: string): number {
   // Examples: PT1M30S → 90, PT45S → 45, PT2M → 120
   const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/)
@@ -66,7 +70,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const url = new URL(request.url)
   const tab = (url.searchParams.get('tab') ?? 'game') as 'game' | 'all'
-  const query = tab === 'all' ? '#Shorts' : '게임 모바일게임 #Shorts'
+  const query = tab === 'all' ? '인기 쇼츠' : '게임 모바일게임 #Shorts'
   const cacheKey = tab === 'all' ? 'all' : 'game'
 
   // Serve from memory cache if fresh
@@ -177,6 +181,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     const duration = parseIso8601Duration(details.contentDetails.duration)
     if (duration > 60) continue
+    if (!hasKorean(searchItem.snippet.title)) continue
 
     const thumbnailUrl =
       searchItem.snippet.thumbnails.high?.url ??
