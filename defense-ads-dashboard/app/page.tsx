@@ -423,7 +423,7 @@ export default function LandingPage() {
           className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6"
           style={{ color: 'var(--color-text-primary)' }}
         >
-          지금 바로 시작하세요
+          지금 바로 살펴보세요
         </h2>
         <Link
           href="/dashboard"
@@ -431,12 +431,9 @@ export default function LandingPage() {
           className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-lg transition-all hover:scale-105 hover:opacity-90 mb-6 w-full sm:w-auto"
           style={{ background: 'var(--color-accent)', minHeight: '44px' }}
         >
-          대시보드 바로가기
+          뉴스 보러가기
           <span aria-hidden>→</span>
         </Link>
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          매일 오전 9시 슬랙으로 브리핑이 발송됩니다
-        </p>
       </section>
 
     </div>
