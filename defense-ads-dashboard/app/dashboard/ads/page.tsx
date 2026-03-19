@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { MetaAd, AdAnalysis, FetchAdsResponse, CacheEntry } from '@/types/ad'
+import { MetaAd, AdAnalysis, AdTrends, AnalyzeResponse, FetchAdsResponse, CacheEntry } from '@/types/ad'
 import AdCard from '@/components/AdCard'
 import Top3Banner from '@/components/Top3Banner'
 import KeywordManager from '@/components/KeywordManager'
@@ -30,7 +30,7 @@ function formatLastUpdated(date: Date): string {
   })
 }
 
-function InsightSection({ allAds }: { allAds: MetaAd[] }) {
+function InsightSection({ allAds, trends, isAnalyzing }: { allAds: MetaAd[]; trends?: AdTrends | null; isAnalyzing: boolean }) {
   const pageCount: Record<string, number> = {}
   for (const ad of allAds) {
     if (ad.page_name) pageCount[ad.page_name] = (pageCount[ad.page_name] ?? 0) + 1
@@ -45,14 +45,6 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
     const diff = (now - new Date(ad.ad_delivery_start_time).getTime()) / (1000 * 60 * 60 * 24)
     return diff <= 7
   }).length
-
-  const countryCodes = ['KR', 'JP', 'TW', 'US']
-  const countryCount: Record<string, number> = { KR: 0, JP: 0, TW: 0, US: 0, OTHER: 0 }
-  for (const ad of allAds) {
-    const c = ad.detectedCountry ?? 'OTHER'
-    if (countryCodes.includes(c)) countryCount[c]++
-    else countryCount['OTHER']++
-  }
 
   return (
     <section className="mb-8">
@@ -101,21 +93,36 @@ function InsightSection({ allAds }: { allAds: MetaAd[] }) {
           className="rounded-xl p-4 bg-theme-card border border-theme-border"
           style={{ boxShadow: 'var(--card-shadow)' }}
         >
-          <p className="text-xs mb-3 uppercase tracking-wide text-theme-secondary">국가별 광고 분포</p>
-          <div className="flex flex-col gap-1.5">
-            {[
-              { code: 'KR', label: '🇰🇷 KR' },
-              { code: 'JP', label: '🇯🇵 JP' },
-              { code: 'TW', label: '🇹🇼 TW' },
-              { code: 'US', label: '🇺🇸 US' },
-              { code: 'OTHER', label: '🌐 기타' },
-            ].map(({ code, label }) => (
-              <div key={code} className="flex items-center justify-between text-sm">
-                <span className="text-theme-secondary">{label}</span>
-                <span className="font-semibold text-theme-text">{countryCount[code]}</span>
+          <p className="text-xs mb-3 uppercase tracking-wide text-theme-secondary">공통 크리에이티브 트렌드</p>
+          {isAnalyzing ? (
+            <div className="flex flex-col gap-2 animate-pulse">
+              <div className="h-3 rounded w-full bg-theme-surface" />
+              <div className="h-3 rounded w-5/6 bg-theme-surface" />
+              <div className="h-3 rounded w-4/6 bg-theme-surface" />
+              <div className="flex gap-1.5 mt-2">
+                <div className="h-5 rounded-full w-16 bg-theme-surface" />
+                <div className="h-5 rounded-full w-20 bg-theme-surface" />
+                <div className="h-5 rounded-full w-14 bg-theme-surface" />
               </div>
-            ))}
-          </div>
+            </div>
+          ) : trends ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs leading-relaxed text-theme-text">{trends.creative_summary}</p>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {trends.hook_patterns.map((pattern) => (
+                  <span
+                    key={pattern}
+                    className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
+                  >
+                    {pattern}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-theme-secondary">—</p>
+          )}
         </div>
       </div>
     </section>
@@ -159,6 +166,7 @@ function DashboardContent() {
   const [uniqueAds, setUniqueAds] = useState<MetaAd[]>([])
   const [showUniqueOnly, setShowUniqueOnly] = useState(true)
   const [analyses, setAnalyses] = useState<AdAnalysis[] | null>(null)
+  const [trends, setTrends] = useState<AdTrends | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -183,9 +191,10 @@ function DashboardContent() {
       try {
         const cached = sessionStorage.getItem(analysisCacheKey)
         if (cached) {
-          const entry: { data: AdAnalysis[]; timestamp: number } = JSON.parse(cached)
+          const entry: { data: AnalyzeResponse; timestamp: number } = JSON.parse(cached)
           if (Date.now() - entry.timestamp < ANALYSIS_CACHE_TTL) {
-            setAnalyses(entry.data)
+            setAnalyses(entry.data.top3)
+            setTrends(entry.data.trends)
             return
           }
         }
@@ -200,11 +209,12 @@ function DashboardContent() {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ads: topAds.slice(0, 5), keywords: kws }),
+        body: JSON.stringify({ ads: topAds.slice(0, 10), keywords: kws }),
       })
       if (res.ok) {
-        const data: AdAnalysis[] = await res.json()
-        setAnalyses(data)
+        const data: AnalyzeResponse = await res.json()
+        setAnalyses(data.top3)
+        setTrends(data.trends)
         try {
           sessionStorage.setItem(analysisCacheKey, JSON.stringify({ data, timestamp: Date.now() }))
         } catch (e) {
@@ -227,6 +237,7 @@ function DashboardContent() {
     setIsLoading(true)
     setError(null)
     setAnalyses(null)
+    setTrends(null)
 
     const cacheKey = getCacheKey(kws)
 
@@ -427,7 +438,7 @@ function DashboardContent() {
             {/* Tab Content */}
             {activeTab === 'summary' ? (
               <>
-                <InsightSection allAds={showUniqueOnly ? uniqueAds : ads} />
+                <InsightSection allAds={showUniqueOnly ? uniqueAds : ads} trends={trends} isAnalyzing={isAnalyzing} />
                 <section className="mb-8">
                   <h2 className="text-lg font-semibold mb-4 text-theme-text">AI 분석 Top 3</h2>
                   <Top3Banner analyses={analyses} isLoading={isAnalyzing} />

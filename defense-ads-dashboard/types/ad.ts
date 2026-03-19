@@ -31,6 +31,17 @@ export interface AdAnalysis {
   ad_snapshot_url?: string
 }
 
+export interface AdTrends {
+  hook_patterns: string[]
+  cta_patterns: string[]
+  creative_summary: string
+}
+
+export interface AnalyzeResponse {
+  top3: AdAnalysis[]
+  trends: AdTrends
+}
+
 export interface FetchAdsResponse {
   ads: MetaAd[]
   uniqueAds: MetaAd[]

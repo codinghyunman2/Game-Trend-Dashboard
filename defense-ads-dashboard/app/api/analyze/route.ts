@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { MetaAd, AdAnalysis } from '@/types/ad'
+import { MetaAd, AdAnalysis, AdTrends, AnalyzeResponse } from '@/types/ad'
 import { getCache, setCache } from '@/lib/cache'
 import {
   extractClientIp,
@@ -17,7 +17,7 @@ const ADS_ANALYSIS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 const rateLimiter = createRateLimiter(60_000, 5)
 
 interface AnalysisCachePayload {
-  analyses: AdAnalysis[]
+  result: AnalyzeResponse
   cachedAt: string
 }
 
@@ -95,12 +95,12 @@ export async function POST(request: NextRequest) {
   if (!forceRefresh) {
     const cached = getCache<AnalysisCachePayload>(cacheKey)
     if (cached) {
-      return NextResponse.json(cached.analyses)
+      return NextResponse.json(cached.result)
     }
   }
 
   try {
-    const topAds = (ads as MetaAd[]).slice(0, 5)
+    const topAds = (ads as MetaAd[]).slice(0, 10)
 
     // Sanitise ad fields: truncate to reasonable lengths before sending to AI
     const adsData = topAds.map((ad, i) => ({
@@ -113,31 +113,38 @@ export async function POST(request: NextRequest) {
     const client = new Anthropic({ apiKey })
 
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2048,
       system:
-        '당신은 모바일 게임 광고 전문 마케터입니다. 주어진 광고 데이터를 분석하여 가장 효과적인 광고 Top 3를 선정하고 JSON으로만 응답합니다.',
+        '당신은 모바일 게임 광고 전문 마케터입니다. 주어진 광고 데이터를 분석하여 Top 3와 전체 트렌드를 JSON으로만 응답합니다.',
       messages: [
         {
           role: 'user',
-          content: `다음 디펜스 장르 모바일 게임 광고 상위 5개를 분석하여 가장 효과적인 Top 3를 선정해주세요.
+          content: `다음 디펜스 장르 모바일 게임 광고 상위 10개를 분석해주세요.
 
 광고 데이터:
 ${JSON.stringify(adsData, null, 2)}
 
-다음 JSON 배열 형식으로만 응답해주세요 (마크다운 코드블록 없이):
-[
-  {
-    "rank": 1,
-    "score": (100점 만점 종합 점수),
-    "title": "(광고 원문 제목 그대로 - title 필드)",
-    "game_name": "(게임명 - title 또는 본문에서 추출)",
-    "summary": "(광고 전략 요약 2~3문장)",
-    "hook": "(이 광고의 핵심 후킹 포인트)",
-    "strengths": ["강점1", "강점2", "강점3"],
-    "ad_snapshot_url": "(원본 URL)"
+다음 JSON 형식으로만 응답해주세요 (마크다운 코드블록 없이):
+{
+  "top3": [
+    {
+      "rank": 1,
+      "score": (100점 만점 종합 점수),
+      "title": "(광고 원문 제목 그대로 - title 필드)",
+      "game_name": "(게임명 - title 또는 본문에서 추출)",
+      "summary": "(광고 전략 요약 2~3문장)",
+      "hook": "(이 광고의 핵심 후킹 포인트)",
+      "strengths": ["강점1", "강점2", "강점3"],
+      "ad_snapshot_url": "(원본 URL)"
+    }
+  ],
+  "trends": {
+    "hook_patterns": ["전체 광고에서 공통으로 보이는 후킹 패턴 3개"],
+    "cta_patterns": ["공통 CTA 패턴 2~3개"],
+    "creative_summary": "전체 광고를 관통하는 크리에이티브 트렌드 1~2문장 요약"
   }
-]`,
+}`,
         },
       ],
     })
@@ -154,11 +161,11 @@ ${JSON.stringify(adsData, null, 2)}
     const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
     if (codeBlockMatch) responseText = codeBlockMatch[1].trim()
 
-    let analyses: AdAnalysis[]
+    let result: AnalyzeResponse
     try {
       const parsed = JSON.parse(responseText)
-      if (!Array.isArray(parsed)) throw new Error('not array')
-      analyses = parsed as AdAnalysis[]
+      if (!parsed.top3 || !Array.isArray(parsed.top3)) throw new Error('invalid shape')
+      result = parsed as AnalyzeResponse
     } catch {
       return NextResponse.json(
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
@@ -168,11 +175,11 @@ ${JSON.stringify(adsData, null, 2)}
 
     setCache<AnalysisCachePayload>(
       cacheKey,
-      { analyses, cachedAt: new Date().toISOString() },
+      { result, cachedAt: new Date().toISOString() },
       ADS_ANALYSIS_CACHE_TTL,
     )
 
-    return NextResponse.json(analyses)
+    return NextResponse.json(result)
   } catch {
     return NextResponse.json(
       { error: 'ANALYSIS_ERROR', message: 'AI 분석 중 오류가 발생했습니다.' },

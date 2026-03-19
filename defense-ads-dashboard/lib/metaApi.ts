@@ -14,7 +14,7 @@ const FIELDS = [
   'impressions',
 ].join(',')
 
-const MAX_PAGES = 3
+const MAX_PAGES = 5
 const PAGE_LIMIT = 50
 
 export async function fetchAdsByKeyword(
