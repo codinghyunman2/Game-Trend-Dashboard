@@ -106,20 +106,14 @@ function InsightSection({ allAds, trends, isAnalyzing }: { allAds: MetaAd[]; tre
               </div>
             </div>
           ) : trends ? (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs leading-relaxed text-theme-text">{trends.creative_summary}</p>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {trends.hook_patterns.map((pattern) => (
-                  <span
-                    key={pattern}
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: 'var(--color-accent-soft)', color: 'var(--color-accent)' }}
-                  >
-                    {pattern}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <ul className="flex flex-col gap-2">
+              {trends.hook_patterns.slice(0, 3).map((pattern, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-theme-text leading-relaxed">
+                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--color-accent)' }}>•</span>
+                  <span>{pattern}</span>
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="text-sm text-theme-secondary">—</p>
           )}

@@ -118,10 +118,13 @@ export async function POST(request: NextRequest) {
 Ad data:
 ${JSON.stringify(adsData, null, 2)}
 
-Respond in the following JSON format only (no markdown code blocks):
+Respond in the following JSON format only (no markdown code blocks).
+Write hook_patterns as exactly 3 short insight bullets in casual Korean abbreviation style (음슴체, e.g. "~함", "~임", "~됨").
+Each bullet should be a concise 1-sentence insight about what's working creatively.
+
 {
   "trends": {
-    "hook_patterns": ["3 common hook patterns seen across all ads, in Korean"],
+    "hook_patterns": ["insight 1 in 음슴체", "insight 2 in 음슴체", "insight 3 in 음슴체"],
     "cta_patterns": ["2-3 common CTA patterns, in Korean"],
     "creative_summary": "1-2 sentence summary of the creative trend across all ads, in Korean"
   }
