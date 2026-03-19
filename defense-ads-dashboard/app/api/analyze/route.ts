@@ -11,7 +11,6 @@ import {
 
 const MAX_BODY_SIZE = 100 * 1024 // 100 KB
 const MAX_ADS = 10
-const ADS_ANALYSIS_CACHE_KEY = 'ads_analysis'
 const ADS_ANALYSIS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 
 // 5 req/min per IP (AI calls are expensive)
@@ -74,7 +73,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { ads } = body as { ads: unknown }
+  const { ads, keywords: rawKeywords } = body as { ads: unknown; keywords?: unknown }
+  const keywords: string[] = Array.isArray(rawKeywords) ? rawKeywords.map(String) : []
 
   if (!Array.isArray(ads) || ads.length === 0) {
     return NextResponse.json(
@@ -90,8 +90,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const cacheKey = `ads_analysis:${[...keywords].sort().join(',')}`
+
   if (!forceRefresh) {
-    const cached = getCache<AnalysisCachePayload>(ADS_ANALYSIS_CACHE_KEY)
+    const cached = getCache<AnalysisCachePayload>(cacheKey)
     if (cached) {
       return NextResponse.json(cached.analyses)
     }
@@ -111,8 +113,8 @@ export async function POST(request: NextRequest) {
     const client = new Anthropic({ apiKey })
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
       system:
         '당신은 모바일 게임 광고 전문 마케터입니다. 주어진 광고 데이터를 분석하여 가장 효과적인 광고 Top 3를 선정하고 JSON으로만 응답합니다.',
       messages: [
@@ -165,7 +167,7 @@ ${JSON.stringify(adsData, null, 2)}
     }
 
     setCache<AnalysisCachePayload>(
-      ADS_ANALYSIS_CACHE_KEY,
+      cacheKey,
       { analyses, cachedAt: new Date().toISOString() },
       ADS_ANALYSIS_CACHE_TTL,
     )

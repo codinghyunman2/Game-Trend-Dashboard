@@ -156,6 +156,8 @@ function DashboardContent() {
 
   const [keywords, setKeywords] = useState<string[]>(initialKeywords)
   const [ads, setAds] = useState<MetaAd[]>([])
+  const [uniqueAds, setUniqueAds] = useState<MetaAd[]>([])
+  const [showUniqueOnly, setShowUniqueOnly] = useState(true)
   const [analyses, setAnalyses] = useState<AdAnalysis[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -165,7 +167,7 @@ function DashboardContent() {
   const fetchAbortRef = useRef<AbortController | null>(null)
 
   const getCacheKey = useCallback((kws: string[]) => {
-    return `ads_cache_v3_${[...kws].sort().join(',')}`
+    return `ads_cache_v4_${[...kws].sort().join(',')}`
   }, [])
 
   const getAnalysisCacheKey = useCallback((kws: string[]) => {
@@ -198,7 +200,7 @@ function DashboardContent() {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ads: topAds.slice(0, 5) }),
+        body: JSON.stringify({ ads: topAds.slice(0, 5), keywords: kws }),
       })
       if (res.ok) {
         const data: AdAnalysis[] = await res.json()
@@ -235,6 +237,7 @@ function DashboardContent() {
           const entry: CacheEntry = JSON.parse(cached)
           if (Date.now() - entry.timestamp < CACHE_TTL) {
             setAds(entry.data.ads)
+            setUniqueAds(entry.data.uniqueAds ?? entry.data.ads)
             setLastUpdated(new Date(entry.data.cachedAt || entry.timestamp))
             setIsLoading(false)
             fetchAnalysis(entry.data.ads, kws)
@@ -265,6 +268,7 @@ function DashboardContent() {
 
       const response: FetchAdsResponse = data
       setAds(response.ads)
+      setUniqueAds(response.uniqueAds ?? response.ads)
 
       setLastUpdated(new Date(response.cachedAt))
 
@@ -352,6 +356,35 @@ function DashboardContent() {
           </p>
         </section>
 
+        {/* Unique / All toggle */}
+        {!isLoading && !error && ads.length > 0 && (
+          <div className="mb-4 flex items-center gap-3">
+            <span className="text-sm text-theme-secondary">표시 방식:</span>
+            <div className="flex rounded-lg overflow-hidden border border-theme-border text-sm">
+              <button
+                onClick={() => setShowUniqueOnly(true)}
+                className="px-4 py-1.5 transition-colors"
+                style={{
+                  background: showUniqueOnly ? 'var(--color-accent)' : 'var(--color-card)',
+                  color: showUniqueOnly ? '#fff' : 'var(--color-text-secondary)',
+                }}
+              >
+                고유 소재만 ({uniqueAds.length})
+              </button>
+              <button
+                onClick={() => setShowUniqueOnly(false)}
+                className="px-4 py-1.5 transition-colors"
+                style={{
+                  background: !showUniqueOnly ? 'var(--color-accent)' : 'var(--color-card)',
+                  color: !showUniqueOnly ? '#fff' : 'var(--color-text-secondary)',
+                }}
+              >
+                전체 보기 ({ads.length})
+              </button>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <LoadingSpinner />
         ) : error ? (
@@ -394,7 +427,7 @@ function DashboardContent() {
             {/* Tab Content */}
             {activeTab === 'summary' ? (
               <>
-                <InsightSection allAds={ads} />
+                <InsightSection allAds={showUniqueOnly ? uniqueAds : ads} />
                 <section className="mb-8">
                   <h2 className="text-lg font-semibold mb-4 text-theme-text">AI 분석 Top 3</h2>
                   <Top3Banner analyses={analyses} isLoading={isAnalyzing} />
@@ -402,7 +435,7 @@ function DashboardContent() {
               </>
             ) : (
               <section className="mb-8">
-                <CountryAdGrid ads={ads} countryCode={activeTab} />
+                <CountryAdGrid ads={showUniqueOnly ? uniqueAds : ads} countryCode={activeTab} />
               </section>
             )}
           </>

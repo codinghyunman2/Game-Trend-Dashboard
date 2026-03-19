@@ -33,6 +33,7 @@ export interface AdAnalysis {
 
 export interface FetchAdsResponse {
   ads: MetaAd[]
+  uniqueAds: MetaAd[]
   fetchedAt: string
   cachedAt: string
   keywords: string[]

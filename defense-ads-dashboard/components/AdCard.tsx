@@ -9,9 +9,9 @@ interface AdCardProps {
 
 function getCopyBadge(count: number): { label: string; color: string } | null {
   if (count < 2) return null
-  if (count >= 5) return { label: `🔥 ${count}개 소재 집행 중`, color: 'bg-red-600/80 text-red-100' }
-  if (count >= 3) return { label: `🔥 ${count}개 소재 집행 중`, color: 'bg-orange-600/80 text-orange-100' }
-  return { label: `🔥 ${count}개 소재 집행 중`, color: 'bg-yellow-600/80 text-yellow-100' }
+  if (count >= 5) return { label: `🔥 동일 소재 ${count}개 운영 중`, color: 'bg-red-600/80 text-red-100' }
+  if (count >= 3) return { label: `🔥 동일 소재 ${count}개 운영 중`, color: 'bg-orange-600/80 text-orange-100' }
+  return { label: `동일 소재 ${count}개 운영 중`, color: 'bg-yellow-600/80 text-yellow-100' }
 }
 
 function getScoreColor(score: number): string {

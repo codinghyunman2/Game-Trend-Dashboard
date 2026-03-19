@@ -18,6 +18,7 @@ const rateLimiter = createRateLimiter(60_000, 10)
 
 interface AdsCachePayload {
   ads: MetaAd[]
+  uniqueAds: MetaAd[]
   fetchedAt: string
   cachedAt: string
   keywords: string[]
@@ -93,8 +94,18 @@ export async function GET(request: NextRequest) {
     }
     allAds.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
 
+    // Deduplicate by creative: keep highest-score ad per (page_name + body) group
+    const groupMap = new Map<string, MetaAd>()
+    for (const ad of allAds) {
+      const key = `${ad.page_name ?? ''}::${ad.ad_creative_bodies?.[0] ?? ''}`
+      if (!groupMap.has(key)) {
+        groupMap.set(key, ad) // allAds is sorted desc, so first = highest score
+      }
+    }
+    const uniqueAds = Array.from(groupMap.values())
+
     const now = new Date().toISOString()
-    const responseData: AdsCachePayload = { ads: allAds, fetchedAt: now, cachedAt: now, keywords }
+    const responseData: AdsCachePayload = { ads: allAds, uniqueAds, fetchedAt: now, cachedAt: now, keywords }
     setCache<AdsCachePayload>(cacheKey, responseData, ADS_CACHE_TTL)
 
     return NextResponse.json(responseData)
