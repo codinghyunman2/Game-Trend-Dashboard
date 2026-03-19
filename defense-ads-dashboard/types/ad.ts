@@ -42,6 +42,14 @@ export interface AnalyzeResponse {
   trends: AdTrends
 }
 
+export interface Top3Response {
+  top3: AdAnalysis[]
+}
+
+export interface TrendsResponse {
+  trends: AdTrends
+}
+
 export interface FetchAdsResponse {
   ads: MetaAd[]
   uniqueAds: MetaAd[]

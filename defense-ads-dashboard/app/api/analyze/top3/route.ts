@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { MetaAd, AdAnalysis, AdTrends, AnalyzeResponse } from '@/types/ad'
+import { MetaAd, AdAnalysis, Top3Response } from '@/types/ad'
 import { getCache, setCache } from '@/lib/cache'
 import {
   extractClientIp,
@@ -11,13 +11,12 @@ import {
 
 const MAX_BODY_SIZE = 100 * 1024 // 100 KB
 const MAX_ADS = 10
-const ADS_ANALYSIS_CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
+const CACHE_TTL = 1000 * 60 * 60 * 6 // 6시간
 
-// 5 req/min per IP (AI calls are expensive)
 const rateLimiter = createRateLimiter(60_000, 5)
 
-interface AnalysisCachePayload {
-  result: AnalyzeResponse
+interface CachePayload {
+  result: Top3Response
   cachedAt: string
 }
 
@@ -30,12 +29,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // ── Rate limiting ──────────────────────────────────────────────────────────
-  // Use rightmost non-private IP (prevents x-forwarded-for spoofing)
   const ip = extractClientIp(request.headers)
   const rl = rateLimiter.check(ip)
   if (!rl.allowed) {
-    auditLog('RATE_LIMIT', ip, '/api/analyze')
+    auditLog('RATE_LIMIT', ip, '/api/analyze/top3')
     return NextResponse.json(
       { error: 'RATE_LIMITED', message: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.' },
       {
@@ -45,7 +42,6 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // ── Body size ──────────────────────────────────────────────────────────────
   if (isBodyTooLarge(request.headers.get('content-length'), MAX_BODY_SIZE)) {
     return NextResponse.json(
       { error: 'PAYLOAD_TOO_LARGE', message: '요청 크기가 너무 큽니다.' },
@@ -55,7 +51,6 @@ export async function POST(request: NextRequest) {
 
   const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true'
 
-  // ── Parse & validate body ──────────────────────────────────────────────────
   let body: unknown
   try {
     body = await request.json()
@@ -90,10 +85,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const cacheKey = `ads_analysis:${[...keywords].sort().join(',')}`
+  const cacheKey = `ads_top3:${[...keywords].sort().join(',')}`
 
   if (!forceRefresh) {
-    const cached = getCache<AnalysisCachePayload>(cacheKey)
+    const cached = getCache<CachePayload>(cacheKey)
     if (cached) {
       return NextResponse.json(cached.result)
     }
@@ -102,7 +97,6 @@ export async function POST(request: NextRequest) {
   try {
     const topAds = (ads as MetaAd[]).slice(0, 10)
 
-    // Sanitise ad fields: truncate to reasonable lengths before sending to AI
     const adsData = topAds.map((ad, i) => ({
       index: i + 1,
       title: String(ad.ad_creative_link_titles?.[0] ?? '').slice(0, 500),
@@ -114,13 +108,13 @@ export async function POST(request: NextRequest) {
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
+      max_tokens: 1024,
       system:
-        'You are a mobile game advertising specialist. Analyze the given ad data and respond with only JSON containing the Top 3 ads and overall trends. Write all Korean-language output fields (summary, hook, strengths, patterns) in Korean.',
+        'You are a mobile game advertising specialist. Analyze the given ad data and respond with only JSON containing the Top 3 ads. Write all Korean-language output fields (summary, hook, strengths) in Korean.',
       messages: [
         {
           role: 'user',
-          content: `Analyze the top 10 defense-genre mobile game ads below.
+          content: `Analyze the top 10 defense-genre mobile game ads below and return the Top 3.
 
 Ad data:
 ${JSON.stringify(adsData, null, 2)}
@@ -138,12 +132,7 @@ Respond in the following JSON format only (no markdown code blocks):
       "strengths": ["strength1", "strength2", "strength3"],
       "ad_snapshot_url": "(original URL)"
     }
-  ],
-  "trends": {
-    "hook_patterns": ["3 common hook patterns seen across all ads, in Korean"],
-    "cta_patterns": ["2-3 common CTA patterns, in Korean"],
-    "creative_summary": "1-2 sentence summary of the creative trend across all ads, in Korean"
-  }
+  ]
 }`,
         },
       ],
@@ -161,11 +150,11 @@ Respond in the following JSON format only (no markdown code blocks):
     const codeBlockMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
     if (codeBlockMatch) responseText = codeBlockMatch[1].trim()
 
-    let result: AnalyzeResponse
+    let result: Top3Response
     try {
       const parsed = JSON.parse(responseText)
       if (!parsed.top3 || !Array.isArray(parsed.top3)) throw new Error('invalid shape')
-      result = parsed as AnalyzeResponse
+      result = { top3: parsed.top3 as AdAnalysis[] }
     } catch {
       return NextResponse.json(
         { error: 'ANALYSIS_ERROR', message: 'AI 응답을 파싱할 수 없습니다.' },
@@ -173,11 +162,7 @@ Respond in the following JSON format only (no markdown code blocks):
       )
     }
 
-    setCache<AnalysisCachePayload>(
-      cacheKey,
-      { result, cachedAt: new Date().toISOString() },
-      ADS_ANALYSIS_CACHE_TTL,
-    )
+    setCache<CachePayload>(cacheKey, { result, cachedAt: new Date().toISOString() }, CACHE_TTL)
 
     return NextResponse.json(result)
   } catch {

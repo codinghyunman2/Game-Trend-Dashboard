@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { MetaAd, AdAnalysis, AdTrends, AnalyzeResponse, FetchAdsResponse, CacheEntry } from '@/types/ad'
+import { MetaAd, AdAnalysis, AdTrends, Top3Response, TrendsResponse, FetchAdsResponse, CacheEntry } from '@/types/ad'
 import AdCard from '@/components/AdCard'
 import Top3Banner from '@/components/Top3Banner'
 import KeywordManager from '@/components/KeywordManager'
@@ -168,7 +168,8 @@ function DashboardContent() {
   const [analyses, setAnalyses] = useState<AdAnalysis[] | null>(null)
   const [trends, setTrends] = useState<AdTrends | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isTop3Analyzing, setIsTop3Analyzing] = useState(true)
+  const [isTrendsAnalyzing, setIsTrendsAnalyzing] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [activeTab, setActiveTab] = useState<TabId>('summary')
@@ -178,55 +179,103 @@ function DashboardContent() {
     return `ads_cache_v4_${[...kws].sort().join(',')}`
   }, [])
 
-  const getAnalysisCacheKey = useCallback((kws: string[]) => {
-    return `ads_analysis_cache_${[...kws].sort().join(',')}`
+  const getTop3CacheKey = useCallback((kws: string[]) => {
+    return `ads_top3_cache_${[...kws].sort().join(',')}`
   }, [])
 
-  const fetchAnalysis = useCallback(async (topAds: MetaAd[], kws: string[], forceRefresh = false) => {
+  const getTrendsCacheKey = useCallback((kws: string[]) => {
+    return `ads_trends_cache_${[...kws].sort().join(',')}`
+  }, [])
+
+  const fetchTop3 = useCallback(async (topAds: MetaAd[], kws: string[], forceRefresh = false) => {
     if (topAds.length === 0) return
 
-    const analysisCacheKey = getAnalysisCacheKey(kws)
+    const cacheKey = getTop3CacheKey(kws)
 
     if (!forceRefresh) {
       try {
-        const cached = sessionStorage.getItem(analysisCacheKey)
+        const cached = sessionStorage.getItem(cacheKey)
         if (cached) {
-          const entry: { data: AnalyzeResponse; timestamp: number } = JSON.parse(cached)
+          const entry: { data: Top3Response; timestamp: number } = JSON.parse(cached)
           if (Date.now() - entry.timestamp < ANALYSIS_CACHE_TTL) {
             setAnalyses(entry.data.top3)
-            setTrends(entry.data.trends)
+            setIsTop3Analyzing(false)
             return
           }
         }
       } catch (e) {
-        console.warn('Analysis cache read failed:', e)
+        console.warn('Top3 cache read failed:', e)
       }
     }
 
-    setIsAnalyzing(true)
+    setIsTop3Analyzing(true)
     try {
-      const url = forceRefresh ? '/api/analyze?refresh=true' : '/api/analyze'
+      const url = forceRefresh ? '/api/analyze/top3?refresh=true' : '/api/analyze/top3'
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ads: topAds.slice(0, 10), keywords: kws }),
       })
       if (res.ok) {
-        const data: AnalyzeResponse = await res.json()
+        const data: Top3Response = await res.json()
         setAnalyses(data.top3)
-        setTrends(data.trends)
         try {
-          sessionStorage.setItem(analysisCacheKey, JSON.stringify({ data, timestamp: Date.now() }))
+          sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }))
         } catch (e) {
-          console.warn('Analysis cache write failed:', e)
+          console.warn('Top3 cache write failed:', e)
         }
       }
     } catch {
       // Analysis failure is non-critical
     } finally {
-      setIsAnalyzing(false)
+      setIsTop3Analyzing(false)
     }
-  }, [getAnalysisCacheKey])
+  }, [getTop3CacheKey])
+
+  const fetchTrends = useCallback(async (topAds: MetaAd[], kws: string[], forceRefresh = false) => {
+    if (topAds.length === 0) return
+
+    const cacheKey = getTrendsCacheKey(kws)
+
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(cacheKey)
+        if (cached) {
+          const entry: { data: TrendsResponse; timestamp: number } = JSON.parse(cached)
+          if (Date.now() - entry.timestamp < ANALYSIS_CACHE_TTL) {
+            setTrends(entry.data.trends)
+            setIsTrendsAnalyzing(false)
+            return
+          }
+        }
+      } catch (e) {
+        console.warn('Trends cache read failed:', e)
+      }
+    }
+
+    setIsTrendsAnalyzing(true)
+    try {
+      const url = forceRefresh ? '/api/analyze/trends?refresh=true' : '/api/analyze/trends'
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ads: topAds.slice(0, 10), keywords: kws }),
+      })
+      if (res.ok) {
+        const data: TrendsResponse = await res.json()
+        setTrends(data.trends)
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }))
+        } catch (e) {
+          console.warn('Trends cache write failed:', e)
+        }
+      }
+    } catch {
+      // Analysis failure is non-critical
+    } finally {
+      setIsTrendsAnalyzing(false)
+    }
+  }, [getTrendsCacheKey])
 
   const fetchAds = useCallback(async (kws: string[], forceRefresh = false) => {
     // Cancel any in-flight request before starting a new one
@@ -238,6 +287,8 @@ function DashboardContent() {
     setError(null)
     setAnalyses(null)
     setTrends(null)
+    setIsTop3Analyzing(true)
+    setIsTrendsAnalyzing(true)
 
     const cacheKey = getCacheKey(kws)
 
@@ -251,7 +302,8 @@ function DashboardContent() {
             setUniqueAds(entry.data.uniqueAds ?? entry.data.ads)
             setLastUpdated(new Date(entry.data.cachedAt || entry.timestamp))
             setIsLoading(false)
-            fetchAnalysis(entry.data.ads, kws)
+            fetchTop3(entry.data.ads, kws)
+            fetchTrends(entry.data.ads, kws)
             return
           }
         }
@@ -291,13 +343,14 @@ function DashboardContent() {
       }
 
       setIsLoading(false)
-      fetchAnalysis(response.ads, kws, forceRefresh)
+      fetchTop3(response.ads, kws, forceRefresh)
+      fetchTrends(response.ads, kws, forceRefresh)
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return
       setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
       setIsLoading(false)
     }
-  }, [getCacheKey, fetchAnalysis])
+  }, [getCacheKey, fetchTop3, fetchTrends])
 
   useEffect(() => {
     fetchAds(keywords)
@@ -438,10 +491,10 @@ function DashboardContent() {
             {/* Tab Content */}
             {activeTab === 'summary' ? (
               <>
-                <InsightSection allAds={showUniqueOnly ? uniqueAds : ads} trends={trends} isAnalyzing={isAnalyzing} />
+                <InsightSection allAds={showUniqueOnly ? uniqueAds : ads} trends={trends} isAnalyzing={isTrendsAnalyzing} />
                 <section className="mb-8">
                   <h2 className="text-lg font-semibold mb-4 text-theme-text">AI 분석 Top 3</h2>
-                  <Top3Banner analyses={analyses} isLoading={isAnalyzing} />
+                  <Top3Banner analyses={analyses} isLoading={isTop3Analyzing} />
                 </section>
               </>
             ) : (
