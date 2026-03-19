@@ -1,4 +1,4 @@
-# CLAUDE.md — Game Trend Dashboard
+# CLAUDE.md — Rocket Brief
 
 ## 프로젝트 개요
 - **목적**: 게임 업계 뉴스 허브 + Meta Ad Library API 디펜스 장르 광고 분석

@@ -100,7 +100,7 @@ export default function Image() {
         >
           {/* URL */}
           <span style={{ fontSize: '18px', color: '#6b7280' }}>
-            game-wave.vercel.app
+            rocket-brief.vercel.app
           </span>
 
           {/* 지표 */}
