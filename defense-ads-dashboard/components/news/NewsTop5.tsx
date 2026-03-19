@@ -67,38 +67,44 @@ export default function NewsTop5({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {items.map((item) => (
         <div
           key={item.rank}
-          className="flex items-start gap-4 p-4 rounded-xl transition-colors bg-theme-card border border-theme-border"
+          className="rounded-xl bg-theme-card border border-theme-border overflow-hidden"
           style={{ boxShadow: 'var(--card-shadow)' }}
         >
-          <RankBadge rank={item.rank} />
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold leading-snug mb-1 text-theme-text">
+          {/* 헤더 */}
+          <div className="flex items-start gap-3 px-5 pt-4 pb-3 border-b border-theme-border/50">
+            <RankBadge rank={item.rank} />
+            <h3 className="text-sm font-semibold leading-snug text-theme-text pt-0.5">
               {item.titleKo}
             </h3>
-            <ul className="mb-2 space-y-1.5 mt-1.5">
-              {item.summaryKo.split('\n').filter(line => line.trim()).map((line, i) => (
-                <li key={i} className="flex items-start gap-2" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-theme-accent opacity-70" />
-                  <span className="text-theme-secondary">{line}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="flex items-center gap-3 text-xs text-theme-secondary">
-              <span>{item.source}</span>
-              <span>{timeAgo(item.pubDate)}</span>
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-colors hover:underline text-theme-accent"
-              >
-                원문보기 →
-              </a>
-            </div>
+          </div>
+          {/* 불렛 포인트 */}
+          <ul className="px-5 py-3 space-y-2">
+            {item.summaryKo.split('\n').filter(line => line.trim()).map((line, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="mt-[6px] w-1.5 h-1.5 rounded-full shrink-0 bg-theme-accent" />
+                <span className="text-theme-secondary" style={{ fontSize: '13px', lineHeight: '1.65' }}>
+                  {line}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {/* 푸터 */}
+          <div className="flex items-center gap-3 px-5 pb-3 text-xs text-theme-secondary">
+            <span>{item.source}</span>
+            <span>·</span>
+            <span>{timeAgo(item.pubDate)}</span>
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto transition-colors hover:underline text-theme-accent"
+            >
+              원문보기 →
+            </a>
           </div>
         </div>
       ))}
