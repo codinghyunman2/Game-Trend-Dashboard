@@ -165,7 +165,8 @@ Respond in the following JSON format only (no markdown code blocks):
     setCache<CachePayload>(cacheKey, { result, cachedAt: new Date().toISOString() }, CACHE_TTL)
 
     return NextResponse.json(result)
-  } catch {
+  } catch (e) {
+    console.error('[analyze/top3] error:', e)
     return NextResponse.json(
       { error: 'ANALYSIS_ERROR', message: 'AI 분석 중 오류가 발생했습니다.' },
       { status: 500 },
