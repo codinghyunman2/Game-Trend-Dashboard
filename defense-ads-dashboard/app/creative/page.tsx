@@ -450,7 +450,7 @@ function DashboardContent() {
         )}
 
         {isLoading ? (
-          <LoadingSpinner />
+          <LoadingSpinner variant="creative" />
         ) : error ? (
           <div
             className="rounded-xl p-8 text-center bg-theme-card"
@@ -511,7 +511,7 @@ function DashboardContent() {
 
 export default function CreativePage() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<LoadingSpinner variant="creative" />}>
       <DashboardContent />
     </Suspense>
   )

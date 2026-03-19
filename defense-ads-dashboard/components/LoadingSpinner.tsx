@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-const MESSAGES = [
+const NEWS_MESSAGES = [
   "전 세계 게임 뉴스 수집 중... 🕵️",
   "RSS 피드 16개 구독 중... 📡",
   "Claude가 기사를 정독하는 중... 🤖",
@@ -13,7 +13,29 @@ const MESSAGES = [
   "잠깐만요, 거의 다 됐어요... ⏳",
 ]
 
-export default function LoadingSpinner() {
+const CREATIVE_MESSAGES = [
+  "Meta 광고 라이브러리 스캔 중... 🔍",
+  "디펜스 게임 광고 수집 중... 🏰",
+  "경쟁사 소재 분석 중... 📊",
+  "Claude가 광고 트렌드 파악 중... 🤖",
+  "고성과 소재 점수 계산 중... 🎯",
+  "국가별 광고 분류 중... 🌏",
+  "오래 집행된 승자 소재 추출 중... 🏆",
+  "잠깐만요, 거의 다 됐어요... ⏳",
+]
+
+const VIRAL_MESSAGES = [
+  "YouTube Shorts 최신 영상 수집 중... 🎬",
+  "조회수 Top 영상 추려내는 중... 🔥",
+  "게임 카테고리 필터링 중... 🎮",
+  "바이럴 지표 계산 중... 📈",
+  "썸네일 & 제목 분석 중... 🖼️",
+  "인기 급상승 Shorts 정렬 중... ⚡",
+  "잠깐만요, 거의 다 됐어요... ⏳",
+]
+
+export default function LoadingSpinner({ variant = 'news' }: { variant?: 'news' | 'creative' | 'viral' }) {
+  const MESSAGES = variant === 'creative' ? CREATIVE_MESSAGES : variant === 'viral' ? VIRAL_MESSAGES : NEWS_MESSAGES
   const [index, setIndex] = useState(0)
   const [isVisible, setIsVisible] = useState(true)
 

@@ -78,78 +78,93 @@ export async function GET(request: Request): Promise<NextResponse> {
     })
   }
 
-  const publishedAfter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const publishedAfter = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
-  const searchParams = new URLSearchParams({
+  const baseParams = {
     q: query,
     type: 'video',
     videoDuration: 'short',
-    order: 'viewCount',
     publishedAfter,
-    maxResults: '20',
+    maxResults: '50',
     part: 'snippet',
     key: apiKey,
-  })
-
-  const searchRes = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?${searchParams.toString()}`,
-    { next: { revalidate: 0 } },
-  )
-
-  const searchData: YouTubeSearchResponse = await searchRes.json()
-
-  if (searchData.error) {
-    if (searchData.error.code === 403) {
-      return NextResponse.json(
-        { error: 'QUOTA_EXCEEDED', message: 'YouTube API 할당량이 초과되었습니다. 내일 다시 시도해주세요.' },
-        { status: 429 },
-      )
-    }
-    return NextResponse.json(
-      { error: 'YOUTUBE_API_ERROR', message: searchData.error.message },
-      { status: 500 },
-    )
   }
 
-  const searchItems = searchData.items ?? []
+  // 두 검색을 병렬로: 조회수순 + 최신순
+  const [searchByViews, searchByDate] = await Promise.all([
+    fetch(
+      `https://www.googleapis.com/youtube/v3/search?${new URLSearchParams({ ...baseParams, order: 'viewCount' }).toString()}`,
+      { next: { revalidate: 0 } },
+    ).then((r) => r.json() as Promise<YouTubeSearchResponse>),
+    fetch(
+      `https://www.googleapis.com/youtube/v3/search?${new URLSearchParams({ ...baseParams, order: 'date' }).toString()}`,
+      { next: { revalidate: 0 } },
+    ).then((r) => r.json() as Promise<YouTubeSearchResponse>),
+  ])
 
-  if (searchItems.length === 0) {
+  // 에러 체크 (둘 중 하나라도 403이면 QUOTA_EXCEEDED)
+  for (const searchData of [searchByViews, searchByDate]) {
+    if (searchData.error) {
+      if (searchData.error.code === 403) {
+        return NextResponse.json(
+          { error: 'QUOTA_EXCEEDED', message: 'YouTube API 할당량이 초과되었습니다. 내일 다시 시도해주세요.' },
+          { status: 429 },
+        )
+      }
+      return NextResponse.json(
+        { error: 'YOUTUBE_API_ERROR', message: searchData.error.message },
+        { status: 500 },
+      )
+    }
+  }
+
+  // 중복 제거 — videoId 기준
+  const snippetMap = new Map<string, YouTubeSearchItem>()
+  for (const item of [...(searchByViews.items ?? []), ...(searchByDate.items ?? [])]) {
+    if (!snippetMap.has(item.id.videoId)) snippetMap.set(item.id.videoId, item)
+  }
+
+  if (snippetMap.size === 0) {
     const response: ShortsFetchResponse = { items: [], fetchedAt: new Date().toISOString() }
     return NextResponse.json(response)
   }
 
-  const videoIds = searchItems.map((item) => item.id.videoId).join(',')
+  // 최대 100개 videoId를 50개씩 나눠 병렬로 상세 조회
+  const allIds = [...snippetMap.keys()]
+  const idChunks = [allIds.slice(0, 50), allIds.slice(50, 100)].filter((c) => c.length > 0)
 
-  const videosParams = new URLSearchParams({
-    id: videoIds,
-    part: 'statistics,contentDetails',
-    key: apiKey,
-  })
-
-  const videosRes = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?${videosParams.toString()}`,
-    { next: { revalidate: 0 } },
+  const videoDetailResults = await Promise.all(
+    idChunks.map((chunk) =>
+      fetch(
+        `https://www.googleapis.com/youtube/v3/videos?${new URLSearchParams({ id: chunk.join(','), part: 'statistics,contentDetails', key: apiKey }).toString()}`,
+        { next: { revalidate: 0 } },
+      ).then((r) => r.json() as Promise<YouTubeVideosResponse>),
+    ),
   )
 
-  const videosData: YouTubeVideosResponse = await videosRes.json()
-
-  if (videosData.error) {
-    if (videosData.error.code === 403) {
+  for (const videosData of videoDetailResults) {
+    if (videosData.error) {
+      if (videosData.error.code === 403) {
+        return NextResponse.json(
+          { error: 'QUOTA_EXCEEDED', message: 'YouTube API 할당량이 초과되었습니다. 내일 다시 시도해주세요.' },
+          { status: 429 },
+        )
+      }
       return NextResponse.json(
-        { error: 'QUOTA_EXCEEDED', message: 'YouTube API 할당량이 초과되었습니다. 내일 다시 시도해주세요.' },
-        { status: 429 },
+        { error: 'YOUTUBE_API_ERROR', message: videosData.error.message },
+        { status: 500 },
       )
     }
-    return NextResponse.json(
-      { error: 'YOUTUBE_API_ERROR', message: videosData.error.message },
-      { status: 500 },
-    )
   }
 
   const videoDetailsMap = new Map<string, YouTubeVideoItem>()
-  for (const video of videosData.items ?? []) {
-    videoDetailsMap.set(video.id, video)
+  for (const videosData of videoDetailResults) {
+    for (const video of videosData.items ?? []) {
+      videoDetailsMap.set(video.id, video)
+    }
   }
+
+  const searchItems = [...snippetMap.values()]
 
   const items: ShortsItem[] = []
 

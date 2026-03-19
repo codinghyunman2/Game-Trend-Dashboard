@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     const client = new Anthropic({ apiKey })
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
       system:
         'You are a mobile game advertising specialist. Analyze the given ad data and respond with only JSON containing the Top 3 ads. Write all Korean-language output fields (summary, hook, strengths) in Korean.',

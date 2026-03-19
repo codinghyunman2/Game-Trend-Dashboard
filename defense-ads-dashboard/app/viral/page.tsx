@@ -20,18 +20,22 @@ function formatLastUpdated(date: Date): string {
 
 type Tab = 'game' | 'all'
 
+const PAGE_SIZE = 8
+
 export default function ViralPage() {
   const [activeTab, setActiveTab] = useState<Tab>('game')
   const [tabData, setTabData] = useState<{ game: ShortsItem[]; all: ShortsItem[] }>({ game: [], all: [] })
   const [tabLoading, setTabLoading] = useState<{ game: boolean; all: boolean }>({ game: true, all: false })
   const [tabError, setTabError] = useState<{ game: string | null; all: string | null }>({ game: null, all: null })
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [tabPage, setTabPage] = useState<{ game: number; all: number }>({ game: 1, all: 1 })
 
   const cacheKeyFor = (tab: Tab) => (tab === 'game' ? CACHE_KEY_GAME : CACHE_KEY_ALL)
 
   async function fetchShorts(tab: Tab, forceRefresh = false) {
     setTabLoading((prev) => ({ ...prev, [tab]: true }))
     setTabError((prev) => ({ ...prev, [tab]: null }))
+    setTabPage((prev) => ({ ...prev, [tab]: 1 }))
 
     if (!forceRefresh) {
       try {
@@ -92,6 +96,14 @@ export default function ViralPage() {
   const isLoading = tabLoading[activeTab]
   const error = tabError[activeTab]
   const items = tabData[activeTab]
+  const currentPage = tabPage[activeTab]
+  const totalPages = Math.ceil(items.length / PAGE_SIZE)
+  const pagedItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function setPage(page: number) {
+    setTabPage((prev) => ({ ...prev, [activeTab]: page }))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function renderError() {
     if (error === 'YOUTUBE_API_KEY_NOT_SET') {
@@ -156,7 +168,7 @@ export default function ViralPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-theme-text">🎬 바이럴 Shorts</h1>
+          <h1 className="text-2xl font-bold text-theme-text">바이럴 Shorts</h1>
           <button
             onClick={() => fetchShorts(activeTab, true)}
             disabled={isLoading}
@@ -166,7 +178,7 @@ export default function ViralPage() {
             {isLoading ? '로딩 중...' : '새로고침'}
           </button>
         </div>
-        <p className="text-sm mb-4 text-theme-secondary">최근 7일 인기 YouTube Shorts (조회수 Top)</p>
+        <p className="text-sm mb-4 text-theme-secondary">최근 14일 인기 YouTube Shorts (조회수 Top)</p>
 
         {/* Tabs */}
         <div className="flex gap-1 mb-6 p-1 rounded-lg w-fit" style={{ background: 'var(--color-surface)' }}>
@@ -181,13 +193,13 @@ export default function ViralPage() {
                   : { color: 'var(--color-secondary)' }
               }
             >
-              {tab === 'game' ? '🎮 게임' : '🌐 전체'}
+              {tab === 'game' ? '게임' : '전체'}
             </button>
           ))}
         </div>
 
         {isLoading ? (
-          <LoadingSpinner />
+          <LoadingSpinner variant="viral" />
         ) : error ? (
           renderError()
         ) : items.length === 0 ? (
@@ -199,11 +211,47 @@ export default function ViralPage() {
             <p className="text-sm text-theme-secondary">현재 조건에 맞는 Shorts 영상이 없습니다.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {items.map((item) => (
-              <ShortsCard key={item.id} item={item} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {pagedItems.map((item) => (
+                <ShortsCard key={item.id} item={item} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => setPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30"
+                  style={{ background: 'var(--color-surface)', color: 'var(--color-text-secondary)' }}
+                >
+                  ← 이전
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className="w-8 h-8 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      background: p === currentPage ? 'var(--color-accent)' : 'var(--color-surface)',
+                      color: p === currentPage ? '#fff' : 'var(--color-text-secondary)',
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30"
+                  style={{ background: 'var(--color-surface)', color: 'var(--color-text-secondary)' }}
+                >
+                  다음 →
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {lastUpdated && (
