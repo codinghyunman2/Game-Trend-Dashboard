@@ -161,14 +161,14 @@ async function batchTranslate(items: NewsItem[]): Promise<NewsItem[]> {
         max_tokens: 2048,
         messages: [{
           role: 'user',
-          content: `다음 게임 업계 뉴스 제목과 요약을 한국어로 번역해주세요. JSON 배열로 응답해주세요.
-입력 형식: [{ idx, title, summary }]
-출력 형식: [{ idx, titleKo, summaryKo }]
+          content: `Translate the following gaming industry news titles and summaries into Korean. Respond with a JSON array.
+Input format: [{ idx, title, summary }]
+Output format: [{ idx, titleKo, summaryKo }]
 
-번역할 항목:
+Items to translate:
 ${JSON.stringify(translationInput, null, 2)}
 
-JSON 배열만 출력해주세요. 마크다운 코드 블록 없이 순수 JSON만 응답해주세요.`,
+Output JSON array only. Pure JSON, no markdown code blocks.`,
         }],
       }),
     })

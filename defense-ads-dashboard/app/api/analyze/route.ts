@@ -116,33 +116,33 @@ export async function POST(request: NextRequest) {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,
       system:
-        '당신은 모바일 게임 광고 전문 마케터입니다. 주어진 광고 데이터를 분석하여 Top 3와 전체 트렌드를 JSON으로만 응답합니다.',
+        'You are a mobile game advertising specialist. Analyze the given ad data and respond with only JSON containing the Top 3 ads and overall trends. Write all Korean-language output fields (summary, hook, strengths, patterns) in Korean.',
       messages: [
         {
           role: 'user',
-          content: `다음 디펜스 장르 모바일 게임 광고 상위 10개를 분석해주세요.
+          content: `Analyze the top 10 defense-genre mobile game ads below.
 
-광고 데이터:
+Ad data:
 ${JSON.stringify(adsData, null, 2)}
 
-다음 JSON 형식으로만 응답해주세요 (마크다운 코드블록 없이):
+Respond in the following JSON format only (no markdown code blocks):
 {
   "top3": [
     {
       "rank": 1,
-      "score": (100점 만점 종합 점수),
-      "title": "(광고 원문 제목 그대로 - title 필드)",
-      "game_name": "(게임명 - title 또는 본문에서 추출)",
-      "summary": "(광고 전략 요약 2~3문장)",
-      "hook": "(이 광고의 핵심 후킹 포인트)",
-      "strengths": ["강점1", "강점2", "강점3"],
-      "ad_snapshot_url": "(원본 URL)"
+      "score": (overall score out of 100),
+      "title": "(exact original ad title from the title field)",
+      "game_name": "(game name extracted from title or body)",
+      "summary": "(2-3 sentence ad strategy summary, in Korean)",
+      "hook": "(core hook point of this ad, in Korean)",
+      "strengths": ["strength1", "strength2", "strength3"],
+      "ad_snapshot_url": "(original URL)"
     }
   ],
   "trends": {
-    "hook_patterns": ["전체 광고에서 공통으로 보이는 후킹 패턴 3개"],
-    "cta_patterns": ["공통 CTA 패턴 2~3개"],
-    "creative_summary": "전체 광고를 관통하는 크리에이티브 트렌드 1~2문장 요약"
+    "hook_patterns": ["3 common hook patterns seen across all ads, in Korean"],
+    "cta_patterns": ["2-3 common CTA patterns, in Korean"],
+    "creative_summary": "1-2 sentence summary of the creative trend across all ads, in Korean"
   }
 }`,
         },

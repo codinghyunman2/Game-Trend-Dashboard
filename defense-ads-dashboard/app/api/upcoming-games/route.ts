@@ -151,19 +151,19 @@ async function translateGameNames(games: UpcomingGame[]): Promise<UpcomingGame[]
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: `다음 모바일 게임 이름과 장르를 한국어로 번역해줘.
+          content: `Translate the following mobile game names and genres into Korean.
 
-규칙:
-- 고유명사(게임 제목)는 한국 게임 커뮤니티에서 통용되는 한국어 표기로 번역 (예: Fortnite → 포트나이트)
-- 공식 한국어 제목이 있으면 그것을 우선 사용
-- 직역보다 자연스러운 한국어 표현 사용
-- 장르명도 한국 게임 커뮤니티 통용 표현으로 번역 (예: Battle Royale → 배틀로얄, RPG → RPG 그대로)
-- 번역 불필요하면 원문 그대로 반환
+Rules:
+- Game titles: use the Korean transliteration common in the Korean gaming community (e.g., Fortnite → 포트나이트)
+- Use the official Korean title if one exists
+- Prefer natural Korean expressions over literal translations
+- Genre names: use Korean gaming community conventions (e.g., Battle Royale → 배틀로얄, RPG → RPG unchanged)
+- If no translation is needed, return the original text
 
-JSON 배열만 반환 (다른 텍스트 없이):
-[{ "idx": 0, "nameKo": "한국어 게임명", "genresKo": ["장르1", "장르2"] }]
+Return JSON array only (no other text):
+[{ "idx": 0, "nameKo": "Korean game name", "genresKo": ["genre1", "genre2"] }]
 
-원문:
+Source:
 ${JSON.stringify(input, null, 2)}`,
         }],
       }),

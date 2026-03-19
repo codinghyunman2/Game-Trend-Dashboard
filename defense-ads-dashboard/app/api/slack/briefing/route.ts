@@ -126,32 +126,31 @@ async function generateBriefing(
         max_tokens: 1000,
         messages: [{
           role: 'user',
-          content: `당신은 게임 업계 전문 애널리스트입니다.
-오늘의 게임 업계 뉴스와 광고 트렌드를 바탕으로 실무자에게 유용한 데일리 브리핑을 작성해주세요.
+          content: `You are a professional gaming industry analyst.
+Based on today's gaming news and ad trends, write a concise daily briefing useful for practitioners. Write all output in Korean.
 
-작성 규칙:
-- 뉴스 3개: 구체적인 사실 기반으로 한 줄씩
-- 광고트렌드: 실제 수집된 광고 데이터 기반으로 현재 어떤 소재/메시지가 집행되고 있는지 구체적으로
-- 각 항목은 실무에 바로 활용 가능한 인사이트로
-- 뉴스 요약은 50자 이내
-- 한국어로 작성
-- 반드시 아래 JSON 형식으로만 응답 (다른 텍스트 없이)
+Rules:
+- 3 news items: one line each, based on concrete facts
+- adTrends: specific summary of what creatives/messages are currently running, based on actual ad data
+- Each item should be an immediately actionable insight
+- News summaries must be 50 Korean characters or fewer
+- Respond in the JSON format below only (no other text)
 
-응답 형식 (JSON만):
+Response format (JSON only):
 {
   "news": [
-    { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" },
-    { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" },
-    { "summary": "핵심 한 줄 요약", "link": "원문 URL", "source": "출처명" }
+    { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" },
+    { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" },
+    { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" }
   ],
   "adTrends": [
-    "집행 중인 주요 소재/메시지 요약 (실제 광고 데이터 기반, 50자 이내)",
-    "광고에서 보이는 핵심 전략 또는 트렌드 (50자 이내)",
-    "실무 인사이트 또는 시사점 (50자 이내)"
+    "key creative/message currently running (based on actual ad data, ≤50 chars in Korean)",
+    "core strategy or trend visible in ads (≤50 chars in Korean)",
+    "actionable insight or implication (≤50 chars in Korean)"
   ]
 }
 
-뉴스 데이터:
+News data:
 ${JSON.stringify(top20, null, 2)}
 
 ${adsSection}`,
