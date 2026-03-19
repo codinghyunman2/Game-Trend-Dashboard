@@ -31,7 +31,7 @@ export default function LoadingSpinner() {
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <svg
-        className="animate-spin h-12 w-12"
+        className="animate-spin h-12 w-12 text-theme-accent"
         viewBox="0 0 50 50"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -40,7 +40,7 @@ export default function LoadingSpinner() {
           cx="25"
           cy="25"
           r="20"
-          stroke="#7c3aed"
+          stroke="currentColor"
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray="80 40"
@@ -50,7 +50,7 @@ export default function LoadingSpinner() {
           cx="25"
           cy="25"
           r="20"
-          stroke="#2563eb"
+          stroke="currentColor"
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray="30 90"
