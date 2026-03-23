@@ -50,6 +50,22 @@ interface YouTubeVideoItem {
   contentDetails: {
     duration: string
   }
+  snippet?: {
+    description: string
+  }
+}
+
+const EXCLUDED_HASHTAG_KEYWORDS = [
+  // 연예인
+  '아이돌', '연예인', 'kpop', 'k-pop', '가수', '배우', '걸그룹', '보이그룹',
+  '뮤직비디오', 'mv', '직캠', '팬캠', '연기',
+  // 정치
+  '정치', '국회', '선거', '대통령', '의원', '정당', '민주당', '국민의힘', '여당', '야당',
+]
+
+function hasExcludedHashtag(text: string): boolean {
+  const hashtags = (text.match(/#\S+/g) ?? []).map((t) => t.toLowerCase())
+  return hashtags.some((tag) => EXCLUDED_HASHTAG_KEYWORDS.some((kw) => tag.includes(kw.toLowerCase())))
 }
 
 interface YouTubeSearchResponse {
@@ -156,7 +172,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const videoDetailResults = await Promise.all(
     idChunks.map((chunk) =>
       safeFetch(
-        `https://www.googleapis.com/youtube/v3/videos?${new URLSearchParams({ id: chunk.join(','), part: 'statistics,contentDetails', key: apiKey }).toString()}`,
+        `https://www.googleapis.com/youtube/v3/videos?${new URLSearchParams({ id: chunk.join(','), part: 'statistics,contentDetails,snippet', key: apiKey }).toString()}`,
         { next: { revalidate: 0 } } as RequestInit,
       ).then((r) => r.json() as Promise<YouTubeVideosResponse>),
     ),
@@ -197,6 +213,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const duration = parseIso8601Duration(details.contentDetails.duration)
     if (duration > 60) continue
     if (!hasKorean(searchItem.snippet.title)) continue
+
+    const description = details.snippet?.description ?? ''
+    if (hasExcludedHashtag(searchItem.snippet.title) || hasExcludedHashtag(description)) continue
 
     const thumbnailUrl =
       searchItem.snippet.thumbnails.high?.url ??
