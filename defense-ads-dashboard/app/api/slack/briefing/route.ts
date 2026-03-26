@@ -8,6 +8,7 @@ import {
   auditLog,
   validateSelfCallBaseUrl,
 } from '@/lib/security'
+import { sendEmailBriefing } from '@/lib/sendEmailBriefing'
 
 export const dynamic = 'force-dynamic'
 
@@ -375,6 +376,20 @@ export async function GET(request: NextRequest) {
   const sent = await sendSlackMessage(briefingText, newsData, upcomingGames)
   if (!sent) {
     return NextResponse.json({ success: false, message: '슬랙 발송 실패' })
+  }
+
+  // 이메일 발송 — 실패해도 슬랙 결과에 영향 없음
+  try {
+    const { news, adTrends } = parseBriefingLines(briefingText)
+    const emailResult = await sendEmailBriefing({
+      date: formatDate(new Date()),
+      news,
+      adTrends,
+      upcomingGames,
+    })
+    console.log(`[slack/briefing] Email sent: ${emailResult.sent}, errors: ${emailResult.errors}`)
+  } catch (emailErr) {
+    console.error('[slack/briefing] Email briefing failed (non-fatal):', emailErr)
   }
 
   return NextResponse.json({ success: true, message: '브리핑 발송 완료' })

@@ -502,6 +502,7 @@ export default function LandingPage() {
           뉴스 보러가기
           <span aria-hidden>→</span>
         </Link>
+
       </section>
 
     </div>
