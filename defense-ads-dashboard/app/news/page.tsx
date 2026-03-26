@@ -7,6 +7,7 @@ import ChannelTabs from '@/components/news/ChannelTabs'
 import NewsListItem from '@/components/news/NewsListItem'
 import UpcomingGames from '@/components/news/UpcomingGames'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import BannerSlot from '@/components/BannerSlot'
 
 const NEWS_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
 const NEWS_CACHE_KEY = 'news_cache'
@@ -211,6 +212,8 @@ export default function NewsHub() {
   return (
     <div className="min-h-screen bg-theme-bg">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <BannerSlot page="news" />
 
         {isLoading ? (
           <LoadingSpinner />

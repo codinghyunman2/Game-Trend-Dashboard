@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { ShortsItem, ShortsFetchResponse } from '@/types/viral'
 import ShortsCard from '@/components/viral/ShortsCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import BannerSlot from '@/components/BannerSlot'
 
 const CACHE_KEY_GAME = 'viral_shorts_cache_game'
 const CACHE_KEY_ALL = 'viral_shorts_cache_all'
@@ -197,6 +198,8 @@ export default function ViralPage() {
             </button>
           ))}
         </div>
+
+        <BannerSlot page="viral" />
 
         {isLoading ? (
           <LoadingSpinner variant="viral" />

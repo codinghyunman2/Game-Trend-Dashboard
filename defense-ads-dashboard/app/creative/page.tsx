@@ -7,6 +7,7 @@ import AdCard from '@/components/AdCard'
 import Top3Banner from '@/components/Top3Banner'
 import KeywordManager from '@/components/KeywordManager'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import BannerSlot from '@/components/BannerSlot'
 
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 const ANALYSIS_CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
@@ -393,6 +394,8 @@ function DashboardContent() {
         <section className="mb-6">
           <KeywordManager keywords={keywords} onChange={handleKeywordsChange} onRefresh={() => fetchAds(keywords, false)} isRefreshing={isLoading} />
         </section>
+
+        <BannerSlot page="creative" />
 
         {/* 한국 광고 보기 */}
         <section
