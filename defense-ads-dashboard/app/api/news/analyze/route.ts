@@ -146,42 +146,61 @@ Respond in the following JSON array format. Output pure JSON only, no markdown c
     }
 
     const data = await res.json()
-    const responseText = data.content?.[0]?.text ?? '[]'
-    const cleaned = responseText.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
+    const responseText: string = data.content?.[0]?.text ?? ''
+
+    // Extract JSON array — handles code fences and surrounding prose
     let analyzed: unknown
     try {
-      analyzed = JSON.parse(cleaned)
+      // First try: strip code fences and parse directly
+      const stripped = responseText.replace(/```(?:json)?\n?/g, '').replace(/```/g, '').trim()
+      try {
+        analyzed = JSON.parse(stripped)
+      } catch {
+        // Fallback: find the first `[` ... last `]` block in the response
+        const start = responseText.indexOf('[')
+        const end = responseText.lastIndexOf(']')
+        if (start === -1 || end === -1 || end <= start) throw new Error('no JSON array found')
+        analyzed = JSON.parse(responseText.slice(start, end + 1))
+      }
     } catch {
-      console.error('[news/analyze] Failed to parse LLM JSON response')
+      console.error('[news/analyze] Failed to parse LLM JSON response:', responseText.slice(0, 200))
       return NextResponse.json(
         { error: 'ANALYSIS_FAILED', message: '뉴스 분석 중 오류가 발생했습니다.' },
         { status: 500 },
       )
     }
 
-    // Validate shape: must be an array with expected fields
-    if (
-      !Array.isArray(analyzed) ||
-      analyzed.length === 0 ||
-      !analyzed.every(
-        (item) =>
-          item !== null &&
-          typeof item === 'object' &&
-          typeof (item as Record<string, unknown>).rank === 'number' &&
-          typeof (item as Record<string, unknown>).titleKo === 'string' &&
-          typeof (item as Record<string, unknown>).summaryKo === 'string' &&
-          typeof (item as Record<string, unknown>).source === 'string' &&
-          typeof (item as Record<string, unknown>).link === 'string',
-      )
-    ) {
-      console.error('[news/analyze] LLM response failed shape validation')
+    if (!Array.isArray(analyzed) || analyzed.length === 0) {
+      console.error('[news/analyze] LLM returned empty or non-array response')
       return NextResponse.json(
         { error: 'ANALYSIS_FAILED', message: '뉴스 분석 중 오류가 발생했습니다.' },
         { status: 500 },
       )
     }
 
-    return NextResponse.json(analyzed)
+    // Normalise each item — coerce types instead of hard-failing on minor LLM quirks
+    type RawItem = Record<string, unknown>
+    const normalized = (analyzed as RawItem[])
+      .filter((item) => item !== null && typeof item === 'object' && ('titleKo' in item || 'summaryKo' in item))
+      .map((item, i) => ({
+        rank: typeof item.rank === 'number' ? item.rank : Number(item.rank) || i + 1,
+        titleKo: String(item.titleKo ?? ''),
+        summaryKo: String(item.summaryKo ?? ''),
+        source: String(item.source ?? ''),
+        link: item.link != null ? String(item.link) : '',
+        pubDate: String(item.pubDate ?? ''),
+      }))
+      .filter((item) => item.titleKo.length > 0)
+
+    if (normalized.length === 0) {
+      console.error('[news/analyze] No valid items after normalisation')
+      return NextResponse.json(
+        { error: 'ANALYSIS_FAILED', message: '뉴스 분석 중 오류가 발생했습니다.' },
+        { status: 500 },
+      )
+    }
+
+    return NextResponse.json(normalized)
   } catch (err) {
     console.error('[news/analyze] Unexpected error:', err)
     return NextResponse.json(
