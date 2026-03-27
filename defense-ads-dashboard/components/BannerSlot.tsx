@@ -5,7 +5,7 @@ export default function BannerSlot({ page }: { page: BannerPage }) {
   if (!banner) return null
 
   const inner = (
-    <div className="relative w-full overflow-hidden rounded-xl" style={{ border: '1px solid var(--color-border)' }}>
+    <div className="relative w-full overflow-hidden rounded-xl border border-theme-border">
       <img
         src={banner.imagePath}
         alt={banner.alt}
@@ -21,15 +21,13 @@ export default function BannerSlot({ page }: { page: BannerPage }) {
     </div>
   )
 
-  if (banner.link) {
-    return (
-      <div className="mb-6">
+  return (
+    <div className="mb-6">
+      {banner.link ? (
         <a href={banner.link} target="_blank" rel="noopener noreferrer sponsored">
           {inner}
         </a>
-      </div>
-    )
-  }
-
-  return <div className="mb-6">{inner}</div>
+      ) : inner}
+    </div>
+  )
 }

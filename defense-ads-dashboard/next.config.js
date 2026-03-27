@@ -2,17 +2,22 @@
 
 // ─── Content Security Policy ──────────────────────────────────────────────────
 // Notes:
-//  - script-src 'unsafe-inline': required because layout.tsx contains an inline
-//    dark-mode script. For stricter CSP, replace with a nonce injected via middleware.
+//  - script-src uses a sha256 hash for the dark-mode inline script in layout.tsx.
+//    If the script content changes, recompute:
+//    echo -n '<script>' | openssl dgst -sha256 -binary | base64
 //  - style-src 'unsafe-inline': Tailwind CSS injects inline styles.
 //  - img-src includes IGDB cover images and gamemeca thumbnails.
 //  - connect-src 'self': all API calls go to the same origin (server-side only).
 //  - upgrade-insecure-requests: automatically upgrades HTTP sub-resources to HTTPS.
 const isDev = process.env.NODE_ENV === 'development'
 
+// SHA-256 hash of the dark-mode detection inline script in app/layout.tsx:
+// try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}
+const THEME_SCRIPT_HASH = "'sha256-CJnJ7ixxoN4thKRNKpc5DhrbKAYQ0NWnojZKbW6iUSE='"
+
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' ${THEME_SCRIPT_HASH}${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: https://images.igdb.com https://www.gamemeca.com https://i.ytimg.com",
   "font-src 'self' https://cdn.jsdelivr.net",

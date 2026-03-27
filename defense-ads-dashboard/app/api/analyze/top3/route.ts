@@ -7,7 +7,13 @@ import {
   createRateLimiter,
   isBodyTooLarge,
   auditLog,
+  checkRateLimit,
 } from '@/lib/security'
+
+/** Strip HTML tags and truncate — prevents prompt injection via ad content */
+function sanitiseAdText(text: unknown, maxLen: number): string {
+  return String(text ?? '').replace(/<[^>]+>/g, '').slice(0, maxLen)
+}
 
 const MAX_BODY_SIZE = 100 * 1024 // 100 KB
 const MAX_ADS = 10
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   const ip = extractClientIp(request.headers)
-  const rl = rateLimiter.check(ip)
+  const rl = await checkRateLimit(ip, rateLimiter, 5, 60_000)
   if (!rl.allowed) {
     auditLog('RATE_LIMIT', ip, '/api/analyze/top3')
     return NextResponse.json(
@@ -106,8 +112,8 @@ export async function POST(request: NextRequest) {
 
     const adsData = topAds.map((ad, i) => ({
       index: i + 1,
-      title: String(ad.ad_creative_link_titles?.[0] ?? '').slice(0, 500),
-      body: String(ad.ad_creative_bodies?.[0] ?? '').slice(0, 1000),
+      title: sanitiseAdText(ad.ad_creative_link_titles?.[0], 500),
+      body: sanitiseAdText(ad.ad_creative_bodies?.[0], 1000),
       ad_snapshot_url: String(ad.ad_snapshot_url ?? '').slice(0, 500),
     }))
 

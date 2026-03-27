@@ -5,6 +5,7 @@ import {
   createRateLimiter,
   isBodyTooLarge,
   auditLog,
+  checkRateLimit,
 } from '@/lib/security'
 
 const MAX_BODY_SIZE = 50 * 1024 // 50 KB
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   // ── Rate limiting ──────────────────────────────────────────────────────────
   const ip = extractClientIp(request.headers)
-  const rl = rateLimiter.check(ip)
+  const rl = await checkRateLimit(ip, rateLimiter, 5, 60_000)
   if (!rl.allowed) {
     auditLog('RATE_LIMIT', ip, '/api/news/analyze')
     return NextResponse.json(
@@ -54,7 +55,14 @@ export async function POST(request: NextRequest) {
   // ── Parse & validate body ──────────────────────────────────────────────────
   let body: unknown
   try {
-    body = await request.json()
+    const rawBody = await request.text()
+    if (rawBody.length > MAX_BODY_SIZE) {
+      return NextResponse.json(
+        { error: 'PAYLOAD_TOO_LARGE', message: '요청 크기가 너무 큽니다.' },
+        { status: 413 },
+      )
+    }
+    body = JSON.parse(rawBody)
   } catch {
     return NextResponse.json(
       { error: 'INVALID_JSON', message: '잘못된 요청 형식입니다.' },

@@ -35,13 +35,15 @@ export function getEmailTransporter(): Transporter {
   return _transporter
 }
 
-/** 수신자 목록을 환경변수에서 파싱합니다. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** 수신자 목록을 환경변수에서 파싱합니다. 유효하지 않은 이메일 주소는 걸러냅니다. */
 export function getEmailRecipients(): string[] {
   const raw = process.env.EMAIL_RECIPIENTS ?? ''
   return raw
     .split(',')
     .map((s) => s.trim())
-    .filter((s) => s.length > 0)
+    .filter((s) => EMAIL_RE.test(s))
 }
 
 /** SMTP 연결을 검증합니다. 테스트 용도. */

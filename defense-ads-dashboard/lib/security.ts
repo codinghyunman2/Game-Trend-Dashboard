@@ -115,6 +115,59 @@ export function createRateLimiter(
   }
 }
 
+/**
+ * Rate-limit check with optional Upstash Redis distributed backend.
+ *
+ * If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN env vars are set,
+ * this uses the Upstash REST API for globally consistent rate limiting across
+ * all serverless instances. Otherwise falls back to the provided in-memory limiter.
+ *
+ * Setup: https://vercel.com/docs/storage/vercel-kv (set KV_REST_API_URL / KV_REST_API_TOKEN
+ * as UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN in Vercel env vars)
+ */
+export async function checkRateLimit(
+  key: string,
+  fallback: ReturnType<typeof createRateLimiter>,
+  max: number,
+  windowMs: number,
+): Promise<RateLimitResult> {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN
+
+  if (redisUrl && redisToken) {
+    try {
+      const windowSec = Math.ceil(windowMs / 1000)
+      const redisKey = `rl:${key}`
+      const resp = await fetch(`${redisUrl}/pipeline`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${redisToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([
+          ['INCR', redisKey],
+          ['EXPIRE', redisKey, windowSec, 'NX'],
+          ['TTL', redisKey],
+        ]),
+      })
+      if (resp.ok) {
+        const data = (await resp.json()) as Array<{ result: number }>
+        const count = data[0]?.result ?? 0
+        const ttl = data[2]?.result ?? windowSec
+        const resetAt = Date.now() + Math.max(ttl, 0) * 1000
+        if (count > max) {
+          return { allowed: false, remaining: 0, resetAt }
+        }
+        return { allowed: true, remaining: Math.max(max - count, 0), resetAt }
+      }
+    } catch {
+      // Upstash unavailable — fall through to in-memory limiter
+    }
+  }
+
+  return fallback.check(key)
+}
+
 // ─── Input Validation ─────────────────────────────────────────────────────────
 
 const MAX_KEYWORDS = 5
@@ -273,6 +326,17 @@ export function validateSelfCallBaseUrl(url: string): boolean {
     if (SSRF_BLOCKED_RE.some((re) => re.test(url))) {
       // Allow localhost only in development
       return process.env.NODE_ENV !== 'production'
+    }
+    // In production, restrict to known deployment hostnames to prevent SSRF
+    // via a misconfigured SITE_URL env var (DNS rebinding defense)
+    if (process.env.NODE_ENV === 'production') {
+      const allowedHosts = new Set(['rocket-brief.vercel.app'])
+      const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      if (vercelUrl) allowedHosts.add(vercelUrl)
+      // Allow any *.vercel.app preview deployment
+      if (!allowedHosts.has(parsed.hostname) && !parsed.hostname.endsWith('.vercel.app')) {
+        return false
+      }
     }
     return true
   } catch {
