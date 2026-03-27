@@ -37,9 +37,9 @@ const APP_BANNERS: Record<string, { links: Record<BannerPage, string>; images: s
       viral:    'https://abr.ge/fkfhsz',
     },
     images: [
-      '/banners/bd/bd_Creative_image1_1_1.91_kr 0122.png',
-      '/banners/bd/bd_Creative_image4_1_1.91_kr 0122.png',
-      '/banners/bd/bd_Creative_image7_1_1.91_kr 0122.png',
+      '/banners/bd/bd_Creative_image1_1_1.91_kr 0122.jpg',
+      '/banners/bd/bd_Creative_image4_1_1.91_kr 0122.jpg',
+      '/banners/bd/bd_Creative_image7_1_1.91_kr 0122.jpg',
     ],
   },
   wd: {
@@ -49,9 +49,9 @@ const APP_BANNERS: Record<string, { links: Record<BannerPage, string>; images: s
       viral:    'https://abr.ge/cy2rn21',
     },
     images: [
-      '/banners/wd/wd_Creative_image29_1_1.91_kr.png',
-      '/banners/wd/wd_Creative_image33_1_1.91_kr.png',
-      '/banners/wd/wd_thumbnail_11_landscape.png',
+      '/banners/wd/wd_Creative_image29_1_1.91_kr.jpg',
+      '/banners/wd/wd_Creative_image33_1_1.91_kr.jpg',
+      '/banners/wd/wd_thumbnail_11_landscape.jpg',
     ],
   },
   sm: {
@@ -61,9 +61,9 @@ const APP_BANNERS: Record<string, { links: Record<BannerPage, string>; images: s
       viral:    'https://abr.ge/zxs3leo',
     },
     images: [
-      '/banners/sm/sm_Creative_image1_1_1.91_kr.png',
-      '/banners/sm/sm_Creative_image3_1_1.91_kr.png',
-      '/banners/sm/sm_Creative_image5_1_1.91_kr.png',
+      '/banners/sm/sm_Creative_image1_9_16_kr.jpg',
+      '/banners/sm/sm_Creative_image3_9_16_kr.jpg',
+      '/banners/sm/sm_Creative_image5_9_16_kr.jpg',
     ],
   },
 }
