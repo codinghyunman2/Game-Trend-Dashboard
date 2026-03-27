@@ -13,8 +13,12 @@ export interface BannerItem {
   id: string
   /** public/ 폴더 기준 경로 (예: /banners/my-banner.jpg) */
   imagePath: string
-  /** 클릭 시 이동할 URL — 빈 문자열이면 클릭 비활성화 */
-  link: string
+  /**
+   * 클릭 시 이동할 URL — 빈 문자열이면 클릭 비활성화.
+   * 페이지별로 다른 링크(예: Airbridge 트래킹)가 필요하면 객체로 지정:
+   *   { news: 'https://abr.ge/...', creative: 'https://abr.ge/...' }
+   */
+  link: string | Partial<Record<BannerPage, string>>
   /** 이미지 대체 텍스트 */
   alt: string
   /** 표시할 페이지 목록 */
@@ -24,13 +28,40 @@ export interface BannerItem {
 }
 
 export const BANNERS: BannerItem[] = [
-  // 예시:
-  // {
-  //   id: 'banner-1',
-  //   imagePath: '/banners/my-banner.jpg',
-  //   link: 'https://example.com',
-  //   alt: '광고 배너 설명',
-  //   pages: ['news', 'creative', 'viral'],
-  //   active: true,
-  // },
+  {
+    id: 'banner-img1',
+    imagePath: '/banners/wd_Creative_image29_1_1.91_kr.png',
+    link: {
+      news:     'https://abr.ge/buasjb',
+      creative: 'https://abr.ge/a9ve6y',
+      viral:    'https://abr.ge/cy2rn21',
+    },
+    alt: '앱스토어 다운로드',
+    pages: ['news', 'creative', 'viral'],
+    active: true,
+  },
+  {
+    id: 'banner-img2',
+    imagePath: '/banners/wd_Creative_image33_1_1.91_kr.png',
+    link: {
+      news:     'https://abr.ge/buasjb',
+      creative: 'https://abr.ge/a9ve6y',
+      viral:    'https://abr.ge/cy2rn21',
+    },
+    alt: '앱스토어 다운로드',
+    pages: ['news', 'creative', 'viral'],
+    active: true,
+  },
+  {
+    id: 'banner-img3',
+    imagePath: '/banners/wd_thumbnail_11_landscape.png',
+    link: {
+      news:     'https://abr.ge/buasjb',
+      creative: 'https://abr.ge/a9ve6y',
+      viral:    'https://abr.ge/cy2rn21',
+    },
+    alt: '앱스토어 다운로드',
+    pages: ['news', 'creative', 'viral'],
+    active: true,
+  },
 ]
