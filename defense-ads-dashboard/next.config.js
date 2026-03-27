@@ -1,37 +1,10 @@
 /** @type {import('next').NextConfig} */
 
-// ─── Content Security Policy ──────────────────────────────────────────────────
-// Notes:
-//  - script-src uses a sha256 hash for the dark-mode inline script in layout.tsx.
-//    If the script content changes, recompute:
-//    echo -n '<script>' | openssl dgst -sha256 -binary | base64
-//  - style-src 'unsafe-inline': Tailwind CSS injects inline styles.
-//  - img-src includes IGDB cover images and gamemeca thumbnails.
-//  - connect-src 'self': all API calls go to the same origin (server-side only).
-//  - upgrade-insecure-requests: automatically upgrades HTTP sub-resources to HTTPS.
-const isDev = process.env.NODE_ENV === 'development'
-
-// SHA-256 hash of the dark-mode detection inline script in app/layout.tsx:
-// try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}
-const THEME_SCRIPT_HASH = "'sha256-CJnJ7ixxoN4thKRNKpc5DhrbKAYQ0NWnojZKbW6iUSE='"
-
-// SHA-256 hash of a Next.js App Router internal inline script (hydration/routing)
-const NEXTJS_INTERNAL_HASH = "'sha256-IYQwQlCS7tlDdfed8qCp+uGm3rBPumW7jftgB2PJ+k0='"
-
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' ${THEME_SCRIPT_HASH} ${NEXTJS_INTERNAL_HASH}${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ''}`,
-  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-  "img-src 'self' data: https://images.igdb.com https://www.gamemeca.com https://i.ytimg.com",
-  "font-src 'self' https://cdn.jsdelivr.net",
-  "connect-src 'self' https://cdn.jsdelivr.net",
-  "frame-src 'none'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "upgrade-insecure-requests",
-].join('; ')
+// ─── Security Headers ─────────────────────────────────────────────────────────
+// NOTE: Content-Security-Policy is NOT set here.
+// CSP requires a per-request nonce to cover Next.js App Router streaming scripts
+// (self.__next_f.push(...)). It is generated in middleware.ts and injected as a
+// response header there. Static hash-based CSP breaks App Router streaming.
 
 const securityHeaders = [
   // Prevent browsers from inferring content type (XSS vector)
@@ -52,9 +25,6 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
   },
-  // Content Security Policy
-  { key: 'Content-Security-Policy', value: csp },
-  // Remove the X-Powered-By header that reveals Next.js (also set poweredByHeader: false)
 ]
 
 const nextConfig = {

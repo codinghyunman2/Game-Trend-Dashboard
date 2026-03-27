@@ -2,11 +2,14 @@
  * middleware.ts — Edge middleware
  *
  * Responsibilities:
+ *  - CSP: generate a per-request nonce and inject it into the Content-Security-Policy
+ *    response header. The nonce is also forwarded to Server Components via x-nonce
+ *    request header so layout.tsx can stamp inline scripts.
  *  - CORS: allow same-origin browser requests; block unknown cross-origin requests
  *  - Preflight (OPTIONS): respond 204 with CORS headers
  *
- * NOTE: Security headers (CSP, HSTS, etc.) are set in next.config.js so they
- * apply to every response without needing runtime logic here.
+ * NOTE: Static security headers (HSTS, X-Frame-Options, etc.) remain in
+ * next.config.js. Only CSP is handled here because it requires a per-request nonce.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -40,50 +43,85 @@ function setCorsHeaders(headers: Headers, origin: string): void {
   headers.set('Vary', 'Origin')
 }
 
+function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return btoa(String.fromCharCode(...bytes))
+}
+
+function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === 'development'
+  return [
+    "default-src 'self'",
+    // nonce covers both our inline script and Next.js App Router streaming scripts
+    `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ''}`,
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "img-src 'self' data: https://images.igdb.com https://www.gamemeca.com https://i.ytimg.com",
+    "font-src 'self' https://cdn.jsdelivr.net",
+    "connect-src 'self' https://cdn.jsdelivr.net",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests",
+  ].join('; ')
+}
+
 export function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl
   const { method } = request
 
-  // Only process API routes
-  if (!pathname.startsWith('/api/')) {
-    return NextResponse.next()
-  }
+  const nonce = generateNonce()
+  const csp = buildCsp(nonce)
 
-  const origin = request.headers.get('origin')
+  // ── API routes: CORS + nonce ───────────────────────────────────────────────
+  if (pathname.startsWith('/api/')) {
+    const origin = request.headers.get('origin')
 
-  // ── Preflight ─────────────────────────────────────────────────────────────
-  if (method === 'OPTIONS') {
-    const response = new NextResponse(null, { status: 204 })
+    // Preflight
+    if (method === 'OPTIONS') {
+      const response = new NextResponse(null, { status: 204 })
+      if (origin) {
+        const expected = getExpectedOrigin(request)
+        if (isAllowedOrigin(origin, expected)) {
+          setCorsHeaders(response.headers, origin)
+        }
+      }
+      response.headers.set('Content-Security-Policy', csp)
+      return response
+    }
+
+    // Cross-origin check (server-to-server requests have no Origin — always pass)
     if (origin) {
       const expected = getExpectedOrigin(request)
-      if (isAllowedOrigin(origin, expected)) {
-        setCorsHeaders(response.headers, origin)
+      if (!isAllowedOrigin(origin, expected)) {
+        return NextResponse.json(
+          { error: 'FORBIDDEN', message: '허용되지 않은 출처입니다.' },
+          { status: 403 },
+        )
       }
     }
+
+    const requestHeaders = new Headers(request.headers)
+    requestHeaders.set('x-nonce', nonce)
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    if (origin) {
+      setCorsHeaders(response.headers, origin)
+    }
+    response.headers.set('Content-Security-Policy', csp)
     return response
   }
 
-  // ── Cross-origin check ────────────────────────────────────────────────────
-  // Requests WITHOUT an Origin header are server-to-server (Vercel Cron,
-  // internal self-calls from slack/briefing, etc.) — always allowed.
-  if (origin) {
-    const expected = getExpectedOrigin(request)
-    if (!isAllowedOrigin(origin, expected)) {
-      return NextResponse.json(
-        { error: 'FORBIDDEN', message: '허용되지 않은 출처입니다.' },
-        { status: 403 },
-      )
-    }
-  }
-
-  // ── Pass-through with CORS headers ────────────────────────────────────────
-  const response = NextResponse.next()
-  if (origin) {
-    setCorsHeaders(response.headers, origin)
-  }
+  // ── Page routes: forward nonce to Server Components ───────────────────────
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set('Content-Security-Policy', csp)
   return response
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  // Run on all routes except static assets and images
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico).*)'],
 }
