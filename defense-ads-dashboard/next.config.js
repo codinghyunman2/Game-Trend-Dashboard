@@ -15,9 +15,12 @@ const isDev = process.env.NODE_ENV === 'development'
 // try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}
 const THEME_SCRIPT_HASH = "'sha256-CJnJ7ixxoN4thKRNKpc5DhrbKAYQ0NWnojZKbW6iUSE='"
 
+// SHA-256 hash of a Next.js App Router internal inline script (hydration/routing)
+const NEXTJS_INTERNAL_HASH = "'sha256-IYQwQlCS7tlDdfed8qCp+uGm3rBPumW7jftgB2PJ+k0='"
+
 const csp = [
   "default-src 'self'",
-  `script-src 'self' ${THEME_SCRIPT_HASH}${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ''}`,
+  `script-src 'self' ${THEME_SCRIPT_HASH} ${NEXTJS_INTERNAL_HASH}${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
   "img-src 'self' data: https://images.igdb.com https://www.gamemeca.com https://i.ytimg.com",
   "font-src 'self' https://cdn.jsdelivr.net",
