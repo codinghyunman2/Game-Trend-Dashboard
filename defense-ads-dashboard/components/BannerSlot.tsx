@@ -21,12 +21,11 @@ export default function BannerSlot({ page }: { page: BannerPage }) {
     : (banner.link[page] ?? '')
 
   const inner = (
-    <div className="relative w-full overflow-hidden rounded-xl border border-theme-border" style={{ height: '160px' }}>
+    <div className="relative w-full overflow-hidden rounded-xl">
       <img
         src={banner.imagePath}
         alt={banner.alt}
-        className="w-full h-full block"
-        style={{ objectFit: 'cover', objectPosition: 'center' }}
+        className="w-full h-auto block"
         loading="lazy"
       />
       <span
