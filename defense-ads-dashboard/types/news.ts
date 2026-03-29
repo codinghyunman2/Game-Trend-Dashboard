@@ -28,6 +28,7 @@ export interface AnalyzedNews {
   source: string;
   link: string;
   pubDate: string;
+  category?: 'defense' | 'mobile' | 'general';
 }
 
 export interface UpcomingGame {

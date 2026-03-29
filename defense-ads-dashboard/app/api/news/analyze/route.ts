@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
+        max_tokens: 6000,
         system: 'You are an expert analyst of the gaming industry news.',
         messages: [{
           role: 'user',
-          content: `From the news list below, select and analyze the Top 3 most impactful stories for the gaming industry.
+          content: `From the news list below, select and analyze the Top 7 most impactful stories for the gaming industry.
 
 Selection criteria:
 1. Industry impact (breadth of effect on the overall market)
@@ -129,6 +129,8 @@ Sentence 2: What the key content is
 Sentence 3: What it means for the gaming industry
 Write all summaryKo sentences in Korean using 음슴체 (informal Korean style ending with ~음, ~슴, ~함, ~됨, ~임 etc. Never use 합쇼체 or 해요체).
 
+For the category field, use one of: "defense" (디펜스/타워디펜스 관련), "mobile" (모바일 게임 관련), "general" (그 외).
+
 Respond in the following JSON array format. Output pure JSON only, no markdown code blocks:
 [
   {
@@ -137,7 +139,8 @@ Respond in the following JSON array format. Output pure JSON only, no markdown c
     "summaryKo": "Why this news matters (Korean, 음슴체)\\nWhat the key content is (Korean, 음슴체)\\nWhat it means for the industry (Korean, 음슴체)",
     "source": "source name",
     "link": "original URL",
-    "pubDate": "ISO date"
+    "pubDate": "ISO date",
+    "category": "defense | mobile | general"
   }
 ]`,
         }],
@@ -188,6 +191,7 @@ Respond in the following JSON array format. Output pure JSON only, no markdown c
 
     // Normalise each item — coerce types instead of hard-failing on minor LLM quirks
     type RawItem = Record<string, unknown>
+    const VALID_CATEGORIES = ['defense', 'mobile', 'general'] as const
     const normalized = (analyzed as RawItem[])
       .filter((item) => item !== null && typeof item === 'object' && ('titleKo' in item || 'summaryKo' in item))
       .map((item, i) => ({
@@ -197,6 +201,9 @@ Respond in the following JSON array format. Output pure JSON only, no markdown c
         source: String(item.source ?? ''),
         link: item.link != null ? String(item.link) : '',
         pubDate: String(item.pubDate ?? ''),
+        category: (VALID_CATEGORIES as readonly string[]).includes(String(item.category))
+          ? (String(item.category) as 'defense' | 'mobile' | 'general')
+          : ('general' as const),
       }))
       .filter((item) => item.titleKo.length > 0)
 
