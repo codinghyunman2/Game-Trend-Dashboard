@@ -123,11 +123,20 @@ Selection criteria:
 News list:
 ${JSON.stringify(newsInput, null, 2)}
 
-The summaryKo field must be exactly 3 sentences separated by newlines (\\n):
-Sentence 1: Why this news matters
-Sentence 2: What the key content is
-Sentence 3: What it means for the gaming industry
-Write all summaryKo sentences in Korean using 음슴체 (informal Korean style ending with ~음, ~슴, ~함, ~됨, ~임 etc. Never use 합쇼체 or 해요체).
+titleKo rules:
+- Maximum 22 Korean characters. Compress aggressively if needed.
+- Mixed Korean/English: insert a space between Korean and English word boundaries naturally.
+- Numbers + unit + Korean: always insert a space (e.g. "700% 달성", "3조 원", "1위 등극").
+
+The summaryKo field must contain EXACTLY 3 bullets separated by the newline character (\\n).
+Each bullet MUST be 50~80 Korean characters — a complete, informative sentence.
+Written in 음슴체 (ending with ~음, ~슴, ~함, ~됨, ~임 etc. Never use 합쇼체 or 해요체).
+Each bullet must end with a period (.).
+Numbers + unit + Korean inside bullets: always insert a space (e.g. "700% 달성", "3조 원").
+Bullet 1: The single most important fact (핵심 팩트 한 줄)
+Bullet 2: Industry impact in one line (업계 파급력 한 줄)
+Bullet 3: What to watch next (주목 포인트 한 줄)
+Do NOT use literal backslash-n (\\\\n). Use only the actual \\n newline escape in JSON strings.
 
 For the category field, use one of: "defense" (디펜스/타워디펜스 관련), "mobile" (모바일 게임 관련), "general" (그 외).
 
@@ -136,7 +145,7 @@ Respond in the following JSON array format. Output pure JSON only, no markdown c
   {
     "rank": 1,
     "titleKo": "Korean title",
-    "summaryKo": "Why this news matters (Korean, 음슴체)\\nWhat the key content is (Korean, 음슴체)\\nWhat it means for the industry (Korean, 음슴체)",
+    "summaryKo": "핵심 팩트 한 줄\\n업계 파급력 한 줄\\n주목 포인트 한 줄",
     "source": "source name",
     "link": "original URL",
     "pubDate": "ISO date",

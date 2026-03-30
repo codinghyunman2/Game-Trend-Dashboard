@@ -63,23 +63,38 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 3. Generate card images ────────────────────────────────────────────
-    const imageResults = await Promise.all(
-      analyzed.map(async (item, i) => {
-        const params = new URLSearchParams({
-          rank: String(item.rank ?? i + 1),
-          titleKo: item.titleKo,
-          summaryKo: item.summaryKo,
-          source: item.source,
-          category: item.category ?? 'general',
-          date: dateDisplay,
+    const MIN_BULLET_LEN = 8
+    function validateBullets(summaryKo: string): boolean {
+      const lines = summaryKo.split(/\n|\\n/).map((s) => s.trim()).filter(Boolean)
+      if (lines.length < 3) return false
+      return lines.every((l) => l.length >= MIN_BULLET_LEN)
+    }
+
+    const imageResults = (
+      await Promise.all(
+        analyzed.map(async (item, i) => {
+          if (!validateBullets(item.summaryKo)) {
+            console.warn(
+              `[card-news/generate] rank ${item.rank} summaryKo 불릿 유효성 실패 — 건너뜀. 값: ${JSON.stringify(item.summaryKo)}`
+            )
+            return null
+          }
+          const params = new URLSearchParams({
+            rank: String(item.rank ?? i + 1),
+            titleKo: item.titleKo,
+            summaryKo: item.summaryKo,
+            source: item.source,
+            category: item.category ?? 'general',
+            date: dateDisplay,
+          })
+          const imgRes = await fetch(`${baseUrl}/api/card-news/image?${params.toString()}`)
+          if (!imgRes.ok) throw new Error(`Image generation failed for rank ${item.rank}`)
+          const buffer = Buffer.from(await imgRes.arrayBuffer())
+          const fileName = `card-news-${dateFolder}-${String(i + 1).padStart(2, '0')}.png`
+          return { buffer, fileName, news: item }
         })
-        const imgRes = await fetch(`${baseUrl}/api/card-news/image?${params.toString()}`)
-        if (!imgRes.ok) throw new Error(`Image generation failed for rank ${item.rank}`)
-        const buffer = Buffer.from(await imgRes.arrayBuffer())
-        const fileName = `card-news-${dateFolder}-${String(i + 1).padStart(2, '0')}.png`
-        return { buffer, fileName, news: item }
-      })
-    )
+      )
+    ).filter((r): r is NonNullable<typeof r> => r !== null)
 
     // ── 4. Upload to Google Drive ─────────────────────────────────────────
     const uploaded = await uploadCardNewsImages(
