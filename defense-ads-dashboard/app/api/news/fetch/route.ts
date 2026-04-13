@@ -161,7 +161,7 @@ type FetchResult = { source: RSSSource; items: NewsItem[]; error?: string }
 
 async function fetchRSSFeed(source: RSSSource): Promise<FetchResult> {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 3000)
+  const timeout = setTimeout(() => controller.abort(), 8000)
 
   try {
     const res = await fetch(source.url, {
@@ -313,16 +313,19 @@ export async function GET(request: NextRequest) {
       fetchedAt: new Date().toISOString(),
     }
 
-    // Await translation before returning so the response includes translated fields
-    const toTranslate = allNews.filter((n) => !n.isKorean && translateCandidateIds.has(n.id))
-    if (toTranslate.length > 0) {
-      await batchTranslate(toTranslate)
-    }
-
     const cachedAt = new Date().toISOString()
     setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
+    const response = NextResponse.json({ ...responseData, cachedAt })
 
-    return NextResponse.json({ ...responseData, cachedAt })
+    // Background translation — keep response fast to avoid Vercel 10s function timeout
+    const toTranslate = allNews.filter((n) => !n.isKorean && translateCandidateIds.has(n.id))
+    if (toTranslate.length > 0) {
+      batchTranslate(toTranslate).then(() => {
+        setCache<NewsCachePayload>(NEWS_CACHE_KEY, { data: responseData, cachedAt }, NEWS_CACHE_TTL)
+      }).catch(() => {/* silent */})
+    }
+
+    return response
   } catch {
     return NextResponse.json(
       { error: 'FETCH_ERROR', message: '뉴스를 가져오는 중 오류가 발생했습니다.' },
