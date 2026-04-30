@@ -18,3 +18,4 @@ defense-ads-dashboard/out/
 
 # OS
 .DS_Store
+defense-ads-dashboard/secrets/

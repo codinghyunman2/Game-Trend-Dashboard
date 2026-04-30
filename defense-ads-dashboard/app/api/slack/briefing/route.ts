@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { NewsFetchResponse, UpcomingGame } from '@/types/news'
-import { FetchAdsResponse } from '@/types/ad'
 import {
   extractClientIp,
   createRateLimiter,
@@ -73,25 +72,8 @@ async function fetchNewsData(): Promise<NewsFetchResponse | null> {
   }
 }
 
-async function fetchAdsData(): Promise<FetchAdsResponse | null> {
-  try {
-    const res = await fetch(`${getBaseUrl()}/api/fetch-ads?keywords=디펜스`, { cache: 'no-store' })
-    if (!res.ok) return null
-    return await res.json()
-  } catch (e) {
-    console.error('[slack/briefing] 광고 데이터 가져오기 실패:', e)
-    return null
-  }
-}
-
-interface AdSummary {
-  page_name: string
-  body: string
-}
-
 async function generateBriefing(
   newsData: NewsFetchResponse,
-  adsData: FetchAdsResponse | null,
 ): Promise<string | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
@@ -103,15 +85,6 @@ async function generateBriefing(
     source: n.source,
     category: n.category,
   }))
-
-  const top5Ads: AdSummary[] = (adsData?.ads ?? []).slice(0, 5).map((ad) => ({
-    page_name: ad.page_name ?? '(알 수 없음)',
-    body: ad.ad_creative_bodies?.[0] ?? '(광고 텍스트 없음)',
-  }))
-
-  const adsSection = top5Ads.length > 0
-    ? `광고 데이터 (점수 상위 5개):\n${JSON.stringify(top5Ads, null, 2)}`
-    : '광고 데이터: 수집된 광고 없음'
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -127,11 +100,10 @@ async function generateBriefing(
         messages: [{
           role: 'user',
           content: `You are a professional gaming industry analyst.
-Based on today's gaming news and ad trends, write a concise daily briefing useful for practitioners. Write all output in Korean.
+Based on today's gaming news, write a concise daily briefing useful for practitioners. Write all output in Korean.
 
 Rules:
-- 3 news items: one line each, based on concrete facts
-- adTrends: specific summary of what creatives/messages are currently running, based on actual ad data
+- 5 news items: one line each, based on concrete facts
 - Each item should be an immediately actionable insight
 - News summaries must be 50 Korean characters or fewer
 - Respond in the JSON format below only (no other text)
@@ -141,19 +113,14 @@ Response format (JSON only):
   "news": [
     { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" },
     { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" },
+    { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" },
+    { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" },
     { "summary": "one-line summary in Korean", "link": "original URL", "source": "source name" }
-  ],
-  "adTrends": [
-    "key creative/message currently running (based on actual ad data, ≤50 chars in Korean)",
-    "core strategy or trend visible in ads (≤50 chars in Korean)",
-    "actionable insight or implication (≤50 chars in Korean)"
   ]
 }
 
 News data:
-${JSON.stringify(top20, null, 2)}
-
-${adsSection}`,
+${JSON.stringify(top20, null, 2)}`,
         }],
       }),
     })
@@ -193,22 +160,19 @@ function isValidHttpsUrl(url: string): boolean {
   }
 }
 
-function parseBriefingLines(text: string): { news: BriefingNewsItem[]; adTrends: string[] } {
+function parseBriefingLines(text: string): { news: BriefingNewsItem[] } {
   try {
     const parsed = JSON.parse(text)
     const news: BriefingNewsItem[] = Array.isArray(parsed.news)
-      ? parsed.news.slice(0, 3).map((n: BriefingNewsItem) => ({
+      ? parsed.news.slice(0, 5).map((n: BriefingNewsItem) => ({
           summary: n.summary ?? '',
           link: n.link ?? '',
           source: n.source ?? '',
         }))
       : []
-    const adTrends: string[] = Array.isArray(parsed.adTrends) && parsed.adTrends.length > 0
-      ? parsed.adTrends.slice(0, 3)
-      : ['디펜스 장르 광고 동향 집계 중']
-    return { news, adTrends }
+    return { news }
   } catch {
-    return { news: [], adTrends: ['디펜스 장르 광고 동향 집계 중'] }
+    return { news: [] }
   }
 }
 
@@ -236,7 +200,7 @@ async function sendSlackMessage(
   }
 
   const today = formatDate(new Date())
-  const { news, adTrends } = parseBriefingLines(briefingText)
+  const { news } = parseBriefingLines(briefingText)
 
   if (news.length === 0) {
     console.error('[slack/briefing] 파싱된 뉴스 없음')
@@ -252,8 +216,6 @@ async function sendSlackMessage(
         : `• ${summary} — ${source}`
     })
     .join('\n')
-
-  const adTrendLines = adTrends.map((t) => `• ${escapeSlackText(t)}`).join('\n')
 
   const upcomingBlock = upcomingGames.length > 0
     ? [{
@@ -277,16 +239,12 @@ async function sendSlackMessage(
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: `*게임 트렌드 데일리 브리핑* <!channel>\n${today}\n━━━━━━━━━━━━━━━━━━`,
+        text: `*게임 트렌드 데일리 브리핑*\n${today}\n━━━━━━━━━━━━━━━━━━`,
       },
     },
     {
       type: 'section',
       text: { type: 'mrkdwn', text: `📰 *오늘의 주요 뉴스*\n${newsLines}\n` },
-    },
-    {
-      type: 'section',
-      text: { type: 'mrkdwn', text: `🖥️ *광고 트렌드*\n${adTrendLines}\n` },
     },
     ...upcomingBlock,
     {
@@ -358,9 +316,8 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Fetch data & send briefing ─────────────────────────────────────────────
-  const [newsData, adsData, upcomingGames] = await Promise.all([
+  const [newsData, upcomingGames] = await Promise.all([
     fetchNewsData(),
-    fetchAdsData(),
     fetchUpcomingGamesData(),
   ])
 
@@ -368,7 +325,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, message: '뉴스 데이터 없음' })
   }
 
-  const briefingText = await generateBriefing(newsData, adsData)
+  const briefingText = await generateBriefing(newsData)
   if (!briefingText) {
     return NextResponse.json({ success: false, message: '브리핑 생성 실패' })
   }
@@ -380,11 +337,11 @@ export async function GET(request: NextRequest) {
 
   // 이메일 발송 — 실패해도 슬랙 결과에 영향 없음
   try {
-    const { news, adTrends } = parseBriefingLines(briefingText)
+    const { news } = parseBriefingLines(briefingText)
     const emailResult = await sendEmailBriefing({
       date: formatDate(new Date()),
       news,
-      adTrends,
+      adTrends: [],
       upcomingGames,
     })
     console.log(`[slack/briefing] Email sent: ${emailResult.sent}, errors: ${emailResult.errors}`)

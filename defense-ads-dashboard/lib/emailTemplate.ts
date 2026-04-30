@@ -9,7 +9,7 @@ export interface BriefingNewsItem {
 export interface BriefingEmailData {
   date: string
   news: BriefingNewsItem[]
-  adTrends: string[]
+  adTrends?: string[]
   upcomingGames?: UpcomingGame[]
 }
 
@@ -41,7 +41,7 @@ export function buildBriefingEmailHtml(data: BriefingEmailData): string {
       </tr>`
   }).join('')
 
-  const adRows = data.adTrends.map((t) => `
+  const adRows = (data.adTrends ?? []).map((t) => `
       <tr>
         <td style="padding:6px 0;vertical-align:top;padding-right:8px;color:#e5384f;font-size:14px;">•</td>
         <td style="padding:6px 0;font-size:14px;line-height:1.6;color:#e0e0e0;">${esc(t)}</td>
@@ -121,6 +121,7 @@ export function buildBriefingEmailHtml(data: BriefingEmailData): string {
                 </tr>
                 ${newsRows}
 
+                ${adRows.length > 0 ? `
                 <!-- 구분선 -->
                 <tr><td style="padding:20px 0;"><hr style="border:none;border-top:1px solid #2a2a2a;"></td></tr>
 
@@ -130,7 +131,7 @@ export function buildBriefingEmailHtml(data: BriefingEmailData): string {
                     <span style="font-size:16px;font-weight:700;color:#ffffff;">🖥️ 광고 트렌드</span>
                   </td>
                 </tr>
-                ${adRows}
+                ${adRows}` : ''}
 
                 <!-- 출시 예정 게임 (있을 때만) -->
                 ${upcomingSection}
@@ -176,9 +177,9 @@ export function buildBriefingEmailText(data: BriefingEmailData): string {
     '',
     '📰 오늘의 주요 뉴스',
     ...data.news.map((n) => `• ${n.summary} — ${n.source}${n.link ? `\n  ${n.link}` : ''}`),
-    '',
-    '🖥️ 광고 트렌드',
-    ...data.adTrends.map((t) => `• ${t}`),
+    ...(data.adTrends && data.adTrends.length > 0
+      ? ['', '🖥️ 광고 트렌드', ...data.adTrends.map((t) => `• ${t}`)]
+      : []),
   ]
 
   if (data.upcomingGames && data.upcomingGames.length > 0) {
